@@ -182,13 +182,17 @@ export const McpConnectModal: React.FC<McpConnectModalProps> = ({
             </div>
             <div className="text-[11px] text-purple-100/85 space-y-1 leading-relaxed">
               <div>
-                <span className="text-purple-400 font-mono">Auth Method:</span> OAuth (Dynamic Client Registration{' '}
-                <code className="text-emerald-300">/register</code>) or Authless
+                <span className="text-purple-400 font-mono">Auth Method:</span> OAuth 2.1 + Dynamic Client
+                Registration (<code className="text-emerald-300">/register</code>)
               </div>
               <div>
-                <span className="text-purple-400 font-mono">Optional Client ID:</span>{' '}
-                <code className="text-emerald-300 select-all">{staticClientId}</code>{' '}
-                <span className="text-purple-300/65">(leave Client Secret blank — PKCE public client)</span>
+                <span className="text-purple-400 font-mono">OAuth Client ID:</span> Leave{' '}
+                <strong className="text-white">blank</strong> (auto-DCR recommended) or enter{' '}
+                <code className="text-emerald-300 select-all">{staticClientId}</code>
+              </div>
+              <div>
+                <span className="text-purple-400 font-mono">OAuth Client Secret:</span> Leave{' '}
+                <strong className="text-white">blank</strong> (public PKCE client)
               </div>
             </div>
           </div>

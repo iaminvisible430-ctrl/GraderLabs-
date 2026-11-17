@@ -1,0 +1,54 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index?__vercel_path=/api/:path*"
+    },
+    {
+      "source": "/mcp",
+      "destination": "/api/index?__vercel_path=/mcp"
+    },
+    {
+      "source": "/mcp/:path*",
+      "destination": "/api/index?__vercel_path=/mcp/:path*"
+    },
+    {
+      "source": "/sse",
+      "destination": "/api/index?__vercel_path=/sse"
+    },
+    {
+      "source": "/messages",
+      "destination": "/api/index?__vercel_path=/messages"
+    },
+    {
+      "source": "/.well-known/:path*",
+      "destination": "/api/index?__vercel_path=/.well-known/:path*"
+    },
+    {
+      "source": "/register",
+      "destination": "/api/index?__vercel_path=/register"
+    },
+    {
+      "source": "/authorize",
+      "destination": "/api/index?__vercel_path=/authorize"
+    },
+    {
+      "source": "/token",
+      "destination": "/api/index?__vercel_path=/token"
+    },
+    {
+      "source": "/oauth/:path*",
+      "destination": "/api/index?__vercel_path=/oauth/:path*"
+    },
+    {
+      "source": "/((?!api/|mcp|sse|messages|\\.well-known/|register|authorize|token|oauth/|assets/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

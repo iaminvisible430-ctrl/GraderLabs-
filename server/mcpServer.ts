@@ -10,7 +10,7 @@ import {
   applyMcpSpeedFixerRepair,
   finalizeMcpSession,
   saveDirectStudioEvaluation,
-} from './studioStore.ts';
+} from './studioStore.js';
 
 interface JsonRpcRequest {
   jsonrpc?: string;
@@ -806,6 +806,79 @@ function isAllowedRedirectUri(uri: string): boolean {
   }
 }
 
+function getOAuthSigningSecret(): string {
+  return (
+    process.env.MCP_OAUTH_SECRET ||
+    process.env.GEMINI_API_KEY ||
+    process.env.CLOUDFLARE_WORKERS_AI ||
+    process.env.MISTRAL_API_KEY ||
+    process.env.HUGGINGFACE_API_KEY ||
+    'graderlabs-mcp-oauth-signing-key-v1'
+  );
+}
+
+function toBase64Url(input: Buffer | string): string {
+  return Buffer.from(input)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+function fromBase64Url(input: string): Buffer {
+  const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
+  const padLen = (4 - (normalized.length % 4)) % 4;
+  return Buffer.from(normalized + '='.repeat(padLen), 'base64');
+}
+
+function signStatelessToken(prefix: string, payload: Record<string, unknown>): string {
+  const encoded = toBase64Url(JSON.stringify(payload));
+  const sig = toBase64Url(
+    crypto.createHmac('sha256', getOAuthSigningSecret()).update(`${prefix}${encoded}`).digest()
+  );
+  return `${prefix}${encoded}.${sig}`;
+}
+
+function verifyStatelessToken<T extends Record<string, unknown>>(token: string, prefix: string): T | null {
+  if (!token.startsWith(prefix)) return null;
+  const rest = token.slice(prefix.length);
+  const dotIdx = rest.indexOf('.');
+  if (dotIdx <= 0) return null;
+  const encoded = rest.slice(0, dotIdx);
+  const sig = rest.slice(dotIdx + 1);
+  if (!encoded || !sig) return null;
+
+  const expectedSig = toBase64Url(
+    crypto.createHmac('sha256', getOAuthSigningSecret()).update(`${prefix}${encoded}`).digest()
+  );
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(fromBase64Url(encoded).toString('utf-8')) as T;
+    if (typeof parsed.exp === 'number' && parsed.exp < Date.now()) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function deriveClientSecret(clientId: string): string {
+  return (
+    'glsec_' +
+    crypto
+      .createHmac('sha256', getOAuthSigningSecret())
+      .update(`client-secret:${clientId}`)
+      .digest('hex')
+      .slice(0, 48)
+  );
+}
+
 function verifyPkceChallenge(
   codeVerifier: string,
   codeChallenge: string,
@@ -848,6 +921,7 @@ export function mountMcpRoutes(app: Express): void {
     ],
   ]);
   const authCodes = new Map<string, PendingAuthCode>();
+  const usedAuthCodes = new Set<string>();
   const issuedTokens = new Map<string, IssuedOAuthToken>();
   const refreshTokens = new Map<string, IssuedOAuthToken>();
 
@@ -953,9 +1027,15 @@ export function mountMcpRoutes(app: Express): void {
         ? body.scope.trim()
         : 'mcp:tools mcp:resources';
 
-    const clientId = `graderlabs_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
-    const issuedSecret =
-      authMethod === 'none' ? undefined : `glsec_${crypto.randomBytes(24).toString('hex')}`;
+    const createdAt = Date.now();
+    const clientId = signStatelessToken('glc_', {
+      jti: crypto.randomBytes(8).toString('hex'),
+      n: clientName.slice(0, 64),
+      m: authMethod,
+      s: scope,
+      t: createdAt,
+    });
+    const issuedSecret = authMethod === 'none' ? undefined : deriveClientSecret(clientId);
 
     const client: RegisteredOAuthClient = {
       client_id: clientId,
@@ -964,7 +1044,7 @@ export function mountMcpRoutes(app: Express): void {
       redirect_uris: redirectUris,
       token_endpoint_auth_method: authMethod,
       scope,
-      createdAt: Date.now(),
+      createdAt,
     };
     oauthClients.set(clientId, client);
 
@@ -1007,7 +1087,10 @@ export function mountMcpRoutes(app: Express): void {
     }
 
     const client = oauthClients.get(clientId);
-    const displayName = client?.client_name || clientId;
+    const statelessClient = !client
+      ? verifyStatelessToken<{ n?: string }>(clientId, 'glc_')
+      : null;
+    const displayName = client?.client_name || statelessClient?.n || clientId;
     const actionUrl = req.path.startsWith('/oauth/') ? '/oauth/authorize' : '/authorize';
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -1085,7 +1168,15 @@ export function mountMcpRoutes(app: Express): void {
       return;
     }
 
-    const code = `gl_code_${crypto.randomBytes(24).toString('hex')}`;
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+    const code = signStatelessToken('gl_code_', {
+      jti: crypto.randomBytes(12).toString('hex'),
+      cid: clientId,
+      ru: redirectUri,
+      sc: scope,
+      ...(codeChallenge ? { cc: codeChallenge, ccm: codeChallengeMethod } : {}),
+      exp: expiresAt,
+    });
     authCodes.set(code, {
       code,
       client_id: clientId,
@@ -1093,7 +1184,7 @@ export function mountMcpRoutes(app: Express): void {
       scope,
       code_challenge: codeChallenge,
       code_challenge_method: codeChallengeMethod,
-      expiresAt: Date.now() + 5 * 60 * 1000,
+      expiresAt,
     });
 
     target.searchParams.set('code', code);
@@ -1123,16 +1214,66 @@ export function mountMcpRoutes(app: Express): void {
       }
     }
 
+    const issueStatelessTokenPair = (targetClientId: string, targetScope: string): IssuedOAuthToken => {
+      const expiresAt = Date.now() + 86400 * 1000;
+      const accessToken = signStatelessToken('gl_mcp_', {
+        jti: crypto.randomBytes(12).toString('hex'),
+        cid: targetClientId,
+        sc: targetScope,
+        exp: expiresAt,
+      });
+      const refreshToken = signStatelessToken('gl_ref_', {
+        jti: crypto.randomBytes(12).toString('hex'),
+        cid: targetClientId,
+        sc: targetScope,
+        exp: Date.now() + 30 * 86400 * 1000,
+      });
+      const pair: IssuedOAuthToken = {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        client_id: targetClientId,
+        scope: targetScope,
+        expiresAt,
+      };
+      issuedTokens.set(pair.access_token, pair);
+      refreshTokens.set(pair.refresh_token, pair);
+      return pair;
+    };
+
     if (grantType === 'authorization_code') {
       const code = String(body.code || '');
       const redirectUri = String(body.redirect_uri || '');
       const codeVerifier = String(body.code_verifier || '');
-      const pending = authCodes.get(code);
-      if (!pending || pending.expiresAt < Date.now()) {
+
+      let pending = authCodes.get(code);
+      if (!pending && !usedAuthCodes.has(code)) {
+        const statelessCode = verifyStatelessToken<{
+          cid?: string;
+          ru?: string;
+          sc?: string;
+          cc?: string;
+          ccm?: string;
+          exp?: number;
+        }>(code, 'gl_code_');
+        if (statelessCode && statelessCode.cid && statelessCode.ru) {
+          pending = {
+            code,
+            client_id: statelessCode.cid,
+            redirect_uri: statelessCode.ru,
+            scope: statelessCode.sc || 'mcp:tools mcp:resources',
+            code_challenge: statelessCode.cc,
+            code_challenge_method: statelessCode.ccm || 'S256',
+            expiresAt: statelessCode.exp || Date.now() + 60_000,
+          };
+        }
+      }
+
+      if (!pending || pending.expiresAt < Date.now() || usedAuthCodes.has(code)) {
         res.status(400).json({ error: 'invalid_grant', error_description: 'Authorization code is invalid or expired.' });
         return;
       }
       authCodes.delete(code);
+      usedAuthCodes.add(code);
 
       if (redirectUri && pending.redirect_uri !== redirectUri) {
         res.status(400).json({ error: 'invalid_grant', error_description: 'redirect_uri mismatch.' });
@@ -1140,7 +1281,15 @@ export function mountMcpRoutes(app: Express): void {
       }
 
       const registered = oauthClients.get(pending.client_id);
-      if (registered?.client_secret && clientSecret && registered.client_secret !== clientSecret) {
+      const statelessClient = !registered
+        ? verifyStatelessToken<{ m?: string }>(pending.client_id, 'glc_')
+        : null;
+      const expectedSecret =
+        registered?.client_secret ||
+        (statelessClient && statelessClient.m && statelessClient.m !== 'none'
+          ? deriveClientSecret(pending.client_id)
+          : undefined);
+      if (expectedSecret && clientSecret && expectedSecret !== clientSecret) {
         res.status(401).json({ error: 'invalid_client', error_description: 'Invalid client_secret.' });
         return;
       }
@@ -1152,15 +1301,7 @@ export function mountMcpRoutes(app: Express): void {
         }
       }
 
-      const tokenPair: IssuedOAuthToken = {
-        access_token: `gl_mcp_${crypto.randomBytes(24).toString('hex')}`,
-        refresh_token: `gl_ref_${crypto.randomBytes(24).toString('hex')}`,
-        client_id: clientId || pending.client_id,
-        scope: pending.scope,
-        expiresAt: Date.now() + 86400 * 1000,
-      };
-      issuedTokens.set(tokenPair.access_token, tokenPair);
-      refreshTokens.set(tokenPair.refresh_token, tokenPair);
+      const tokenPair = issueStatelessTokenPair(clientId || pending.client_id, pending.scope);
 
       res.json({
         access_token: tokenPair.access_token,
@@ -1174,23 +1315,30 @@ export function mountMcpRoutes(app: Express): void {
 
     if (grantType === 'refresh_token') {
       const oldRefresh = String(body.refresh_token || '');
-      const prev = refreshTokens.get(oldRefresh);
+      let prev = refreshTokens.get(oldRefresh);
+      if (!prev) {
+        const statelessRef = verifyStatelessToken<{ cid?: string; sc?: string; exp?: number }>(
+          oldRefresh,
+          'gl_ref_'
+        );
+        if (statelessRef && statelessRef.cid) {
+          prev = {
+            access_token: '',
+            refresh_token: oldRefresh,
+            client_id: statelessRef.cid,
+            scope: statelessRef.sc || 'mcp:tools mcp:resources',
+            expiresAt: statelessRef.exp || Date.now() + 86400_000,
+          };
+        }
+      }
       if (!prev) {
         res.status(400).json({ error: 'invalid_grant', error_description: 'Invalid refresh_token.' });
         return;
       }
       refreshTokens.delete(oldRefresh);
-      issuedTokens.delete(prev.access_token);
+      if (prev.access_token) issuedTokens.delete(prev.access_token);
 
-      const nextPair: IssuedOAuthToken = {
-        access_token: `gl_mcp_${crypto.randomBytes(24).toString('hex')}`,
-        refresh_token: `gl_ref_${crypto.randomBytes(24).toString('hex')}`,
-        client_id: prev.client_id,
-        scope: prev.scope,
-        expiresAt: Date.now() + 86400 * 1000,
-      };
-      issuedTokens.set(nextPair.access_token, nextPair);
-      refreshTokens.set(nextPair.refresh_token, nextPair);
+      const nextPair = issueStatelessTokenPair(prev.client_id, prev.scope);
 
       res.json({
         access_token: nextPair.access_token,
@@ -1203,14 +1351,10 @@ export function mountMcpRoutes(app: Express): void {
     }
 
     if (grantType === 'client_credentials') {
-      const tokenPair: IssuedOAuthToken = {
-        access_token: `gl_mcp_${crypto.randomBytes(24).toString('hex')}`,
-        refresh_token: `gl_ref_${crypto.randomBytes(24).toString('hex')}`,
-        client_id: clientId || STATIC_PUBLIC_CLIENT_ID,
-        scope: 'mcp:tools mcp:resources',
-        expiresAt: Date.now() + 86400 * 1000,
-      };
-      issuedTokens.set(tokenPair.access_token, tokenPair);
+      const tokenPair = issueStatelessTokenPair(
+        clientId || STATIC_PUBLIC_CLIENT_ID,
+        'mcp:tools mcp:resources'
+      );
       res.json({
         access_token: tokenPair.access_token,
         token_type: 'Bearer',

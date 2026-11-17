@@ -5,7 +5,9 @@ import type { Response } from 'express';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const HISTORY_FILE_PATH = path.resolve(__dirname, '..', '.graderlabs-history.json');
+const HISTORY_FILE_PATH = process.env.VERCEL
+  ? path.join('/tmp', '.graderlabs-history.json')
+  : path.resolve(__dirname, '..', '.graderlabs-history.json');
 
 export interface RawAnnotationInput {
   ymin?: unknown;
