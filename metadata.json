@@ -1,0 +1,10 @@
+{
+  "name": " AutoGradeX - AI Grading Assistant",
+  "description": "An AI-powered grading application that automates the assessment of OMR and handwritten answer sheets using Google Gemini. It accepts answer sheets, reference documents, and question papers to provide fast, accurate grading with detailed feedback and visual previews of mark deductions.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

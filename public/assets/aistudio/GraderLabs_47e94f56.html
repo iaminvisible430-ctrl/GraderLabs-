@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GraderLabs — AI-Driven Exam Evaluation SaaS</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            cosmic: {
+              950: '#040209',
+              900: '#080412',
+              800: '#110926',
+              700: '#1c103b',
+            },
+            accent: {
+              purple: '#7c3aed',
+              violet: '#9333ea',
+              glow: '#a855f7',
+              light: '#d8b4fe'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-deep: #040209;
+      --purple-core: #7c3aed;
+      --purple-bright: #a855f7;
+      --purple-soft: #c084fc;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-deep);
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Subtle Hero Grid Background */
+    .cosmic-grid {
+      background-size: 46px 46px;
+      background-image: 
+        linear-gradient(to right, rgba(168, 85, 247, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(168, 85, 247, 0.06) 1px, transparent 1px);
+      mask-image: radial-gradient(ellipse 75% 60% at 50% 25%, #000 35%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 25%, #000 35%, transparent 100%);
+    }
+
+    /* The Signature Glowing Horizon Arch from Reference Image */
+    .horizon-arch-wrapper {
+      position: absolute;
+      top: 115px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1180px;
+      height: 580px;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .horizon-arch {
+      position: absolute;
+      top: 38px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1040px;
+      height: 1040px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle at 50% 0%,
+        rgba(124, 58, 237, 0.22) 0%,
+        rgba(17, 9, 38, 0.5) 38%,
+        rgba(4, 2, 9, 0.98) 65%
+      );
+      box-shadow:
+        0 -3px 12px 2px rgba(255, 255, 255, 0.85),
+        0 -10px 35px 8px rgba(192, 132, 252, 0.75),
+        0 -28px 85px 24px rgba(124, 58, 237, 0.55),
+        inset 0 18px 45px -8px rgba(192, 132, 252, 0.45);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 55%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 55%);
+    }
+
+    /* Liquid Glassmorphism + Gradient Border Glow */
+    .liquid-glass {
+      position: relative;
+      background: linear-gradient(155deg, rgba(28, 17, 54, 0.62) 0%, rgba(11, 6, 24, 0.82) 100%);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-radius: 1.25rem;
+      box-shadow: 
+        0 20px 50px -15px rgba(0, 0, 0, 0.85),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.14);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* True 1px Animated Gradient Border Glow */
+    .border-glow {
+      position: relative;
+    }
+    .border-glow::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1.2px;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.42) 0%,
+        rgba(168, 85, 247, 0.65) 28%,
+        rgba(88, 28, 135, 0.18) 62%,
+        rgba(192, 132, 252, 0.55) 100%
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      transition: all 0.35s ease;
+    }
+
+    .border-glow-active::before {
+      padding: 1.6px;
+      background: linear-gradient(
+        135deg,
+        #ffffff 0%,
+        #c084fc 30%,
+        #7c3aed 65%,
+        #e879f9 100%
+      );
+      filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.7));
+    }
+
+    .liquid-glass:hover.hover-lift {
+      transform: translateY(-4px);
+      box-shadow: 
+        0 24px 60px -12px rgba(124, 58, 237, 0.28),
+        inset 0 1px 2px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    /* Diagonal Top-Right Specular Light Beam (Exact match to Bento cards in reference) */
+    .specular-beam {
+      position: relative;
+      overflow: hidden;
+    }
+    .specular-beam::after {
+      content: "";
+      position: absolute;
+      top: -45px;
+      right: -45px;
+      width: 190px;
+      height: 95px;
+      background: radial-gradient(ellipse at center, rgba(233, 213, 255, 0.48) 0%, rgba(168, 85, 247, 0.18) 48%, transparent 75%);
+      transform: rotate(35deg);
+      pointer-events: none;
+      filter: blur(8px);
+      transition: opacity 0.4s ease, transform 0.5s ease;
+    }
+    .specular-beam:hover::after {
+      transform: rotate(35deg) scale(1.18);
+      opacity: 1;
+    }
+
+    /* Glow Text */
+    .glow-text {
+      text-shadow: 0 0 28px rgba(192, 132, 252, 0.48), 0 0 8px rgba(255, 255, 255, 0.22);
+    }
+
+    .glow-text-purple {
+      background: linear-gradient(90deg, #ffffff 0%, #e9d5ff 45%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(168, 85, 247, 0.45);
+    }
+
+    /* Primary Purple Pill Button */
+    .btn-quantix {
+      background: linear-gradient(180deg, #9333ea 0%, #6d28d9 100%);
+      box-shadow: 
+        0 0 24px rgba(139, 92, 246, 0.55),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.4);
+      transition: all 0.25s ease;
+    }
+    .btn-quantix:hover {
+      background: linear-gradient(180deg, #a855f7 0%, #7c3aed 100%);
+      box-shadow: 
+        0 0 34px rgba(168, 85, 247, 0.8),
+        inset 0 1.5px 2px rgba(255, 255, 255, 0.6);
+      transform: translateY(-1px);
+    }
+    .btn-quantix:active {
+      transform: translateY(1px);
+    }
+
+    /* Shimmer & Skeleton Loader */
+    @keyframes shimmerSweep {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .skeleton-box {
+      position: relative;
+      overflow: hidden;
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid rgba(168, 85, 247, 0.16);
+    }
+    .skeleton-box::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(192, 132, 252, 0.22) 50%,
+        transparent 100%
+      );
+      animation: shimmerSweep 1.6s infinite;
+    }
+
+    /* Text Shimmer Effect */
+    @keyframes textShimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .shimmer-text {
+      background: linear-gradient(
+        90deg,
+        #c084fc 0%,
+        #ffffff 45%,
+        #e879f9 55%,
+        #c084fc 100%
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: textShimmer 3.5s linear infinite;
+    }
+
+    /* Pulse Ring Animation */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.5), inset 0 0 12px rgba(192, 132, 252, 0.4); }
+      50% { box-shadow: 0 0 38px rgba(192, 132, 252, 0.85), inset 0 0 20px rgba(255, 255, 255, 0.6); }
+    }
+    .orb-glow {
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #05020a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2e1854;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #7c3aed;
+    }
+
+    /* Refined surfaces, restrained lighting, and accessible interactions. */
+    * { user-select: auto; }
+    body {
+      background: #070510;
+      color: #f5f3ff;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focus-visible {
+      outline: 2px solid #d8b4fe;
+      outline-offset: 3px;
+    }
+    .cosmic-grid {
+      opacity: .65;
+      background-image:
+        linear-gradient(to right, rgba(168, 140, 230, .045) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(168, 140, 230, .045) 1px, transparent 1px);
+    }
+    .horizon-arch {
+      box-shadow: 0 -2px 8px rgba(233, 213, 255, .45),
+        0 -12px 45px rgba(139, 92, 246, .35),
+        0 -30px 90px rgba(109, 40, 217, .22),
+        inset 0 15px 40px -10px rgba(192, 132, 252, .25);
+    }
+    .liquid-glass {
+      background: linear-gradient(145deg, rgba(29, 22, 46, .88), rgba(12, 9, 22, .94));
+      box-shadow: 0 18px 48px -24px rgba(0, 0, 0, .8), inset 0 1px rgba(255, 255, 255, .07);
+      transition: transform .3s ease, box-shadow .3s ease, background .3s ease;
+    }
+    .border-glow::before {
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(236, 225, 255, .3), rgba(167, 139, 250, .32) 38%, rgba(120, 87, 160, .12) 70%, rgba(192, 132, 252, .25));
+    }
+    .border-glow-active::before {
+      padding: 1.5px;
+      background: linear-gradient(135deg, #e9d5ff, #a78bfa 38%, #6d28d9 75%, #c4b5fd);
+      filter: drop-shadow(0 0 8px rgba(167, 139, 250, .35));
+    }
+    .specular-beam::after { opacity: .45; }
+    .specular-beam:hover::after { opacity: .65; }
+    .liquid-glass:hover.hover-lift {
+      transform: translateY(-3px);
+      box-shadow: 0 22px 50px -22px rgba(124, 58, 237, .32), inset 0 1px rgba(255, 255, 255, .12);
+    }
+    .glow-text { text-shadow: 0 0 30px rgba(167, 139, 250, .2); }
+    .shimmer-text {
+      background-image: linear-gradient(100deg, #ddd6fe 15%, #fff 40%, #c4b5fd 55%, #ddd6fe 80%);
+      background-size: 250% auto;
+      animation: textShimmer 8s linear infinite;
+      filter: drop-shadow(0 0 12px rgba(167, 139, 250, .16));
+    }
+    .btn-quantix {
+      background: linear-gradient(180deg, #8b5cf6, #6d28d9);
+      box-shadow: 0 8px 24px -8px rgba(124, 58, 237, .65), inset 0 1px rgba(255, 255, 255, .3);
+    }
+    .btn-quantix:hover {
+      background: linear-gradient(180deg, #a078f7, #7c3aed);
+      box-shadow: 0 12px 28px -8px rgba(139, 92, 246, .7), inset 0 1px rgba(255, 255, 255, .35);
+    }
+    .orb-glow { animation: refinedPulse 5s infinite ease-in-out; }
+    @keyframes refinedPulse {
+      0%, 100% { box-shadow: 0 0 16px rgba(139, 92, 246, .3), inset 0 0 10px rgba(192, 132, 252, .2); }
+      50% { box-shadow: 0 0 28px rgba(167, 139, 250, .5), inset 0 0 14px rgba(192, 132, 252, .3); }
+    }
+    @keyframes surfaceEnter {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #hero, #preview, #dashboardSection, #studioSection {
+      animation: surfaceEnter .6s ease both;
+    }
+    #preview { animation-delay: .1s; }
+    #authModal > div { animation: surfaceEnter .25s ease both; }
+    .skeleton-box::after { animation-duration: 2.2s; }
+
+    @media (max-width: 1023px) {
+      .horizon-arch-wrapper { top: 115px; width: 100%; height: 450px; }
+      .horizon-arch { width: 760px; height: 760px; }
+      #landingView > header { padding: 1.1rem 1rem 0; gap: .75rem; }
+      #landingView > header > a span { font-size: 1rem; }
+      #hero { padding: 5rem 1.25rem 3rem; }
+      #hero h1 { font-size: clamp(2.1rem, 9vw, 3rem); line-height: 1.12; }
+      #hero p { font-size: .875rem; }
+      #hero > div:first-child { max-width: 100%; }
+      #hero > div:first-child span { line-height: 1.4; text-align: left; }
+      #hero > div:last-child { gap: .75rem; }
+      #hero > div:last-child > * { justify-content: center; min-height: 46px; }
+      #preview { padding-left: 1rem; padding-right: 1rem; }
+      #features { padding: 3rem 1rem 0; }
+      #features > div:first-child { margin-bottom: 2rem; }
+      #appView > header > div {
+        height: auto;
+        padding: .875rem 1rem;
+        flex-wrap: wrap;
+        gap: .875rem;
+      }
+      #appView > header > div > div:first-child {
+        display: contents;
+      }
+      #appView > header > div > div:first-child > div:first-child { order: 0; }
+      #appView > header > div > div:last-child { order: 1; margin-left: auto; }
+      #appView > header > div > div:first-child > div:last-child {
+        order: 2;
+        width: 100%;
+      }
+      #tabDashboardBtn, #tabStudioBtn {
+        flex: 1;
+        min-height: 40px;
+        justify-content: center;
+        white-space: nowrap;
+      }
+      #dashboardSection, #studioSection { padding: 1.25rem 1rem 0; }
+      #studioSection > div:first-child > div:last-child { width: 100%; flex-wrap: wrap; }
+      #studioSection > div:first-child > div:last-child button { flex: 1; min-height: 42px; }
+      #selectedModeLabel { text-align: right; }
+      #runEvaluationBtn { width: 100%; justify-content: center; min-height: 48px; }
+      #toastContainer { left: 1rem; right: 1rem; bottom: max(1rem, env(safe-area-inset-bottom)); }
+      #toastContainer > div { width: 100%; }
+      #authModal { overflow-y: auto; align-items: safe center; }
+      #authModal > div { margin: auto; }
+    }
+    @media (max-width: 380px) {
+      #landingView > header > a span { font-size: .875rem; }
+      #landingView > header > div { gap: .4rem; }
+      #appView > header .font-bold.tracking-tight { font-size: .875rem; }
+      #appView > header .font-bold.tracking-tight + span { display: none; }
+      #tabDashboardBtn, #tabStudioBtn { padding-left: .5rem; padding-right: .5rem; font-size: .6875rem; }
+      #hero > div:last-child > * { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="selection:bg-purple-600 selection:text-white">
+
+  <!-- ===================================================================== -->
+  <!-- TOP SOUND & NOTIFICATION CONTROLLER (Persistent Floating Utility)     -->
+  <!-- ===================================================================== -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-2.5 pointer-events-none"></div>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 1: LANDING PAGE (Exact Reference Aesthetic)                      -->
+  <!-- ===================================================================== -->
+  <div id="landingView" class="relative min-h-screen overflow-hidden pb-24">
+    
+    <!-- Background Grid & Top Spotlight -->
+    <div class="cosmic-grid absolute inset-0 pointer-events-none"></div>
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[780px] h-[360px] bg-purple-600/25 blur-[130px] rounded-full pointer-events-none"></div>
+
+    <!-- Glowing Horizon Arch -->
+    <div class="horizon-arch-wrapper">
+      <div class="horizon-arch"></div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="relative z-30 max-w-6xl mx-auto px-6 pt-7 flex items-center justify-between">
+      <!-- Brand Logo -->
+      <a href="#" onclick="playSound('click')" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-700 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.65)] border border-purple-300/40 group-hover:scale-105 transition">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z"/>
+          </svg>
+        </div>
+        <span class="text-lg font-bold tracking-tight text-white">GraderLabs</span>
+      </a>
+
+      <!-- Center Glass Pill Nav -->
+      <nav class="hidden md:flex items-center gap-1 p-1.5 rounded-full bg-[#160d2e]/75 backdrop-blur-xl border border-purple-400/25 shadow-[0_0_25px_rgba(124,58,237,0.2)]">
+        <a href="#hero" onmouseenter="playSound('hover')" onclick="playSound('click')" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_14px_rgba(147,51,234,0.6)]">Home</a>
+        <a href="#preview" onmouseenter="playSound('hover')" onclick="playSound('click')" class="px-4 py-1.5 rounded-full text-xs font-medium text-purple-200/80 hover:text-white transition">LLM Engine</a>
+        <a href="#features" onmouseenter="playSound('hover')" onclick="playSound('click')" class="px-4 py-1.5 rounded-full text-xs font-medium text-purple-200/80 hover:text-white transition">Features</a>
+        <a href="#features" onmouseenter="playSound('hover')" onclick="playSound('click')" class="px-4 py-1.5 rounded-full text-xs font-medium text-purple-200/80 hover:text-white transition">OMR + Written</a>
+        <a href="#features" onmouseenter="playSound('hover')" onclick="playSound('click')" class="px-4 py-1.5 rounded-full text-xs font-medium text-purple-200/80 hover:text-white transition">Security</a>
+      </nav>
+
+      <!-- Right Controls: Sound Toggle + Sign In CTA -->
+      <div class="flex items-center gap-3">
+        <button id="soundToggleBtn" onclick="toggleSound()" title="Toggle UI Feedback Sounds" class="w-9 h-9 rounded-full liquid-glass border-glow flex items-center justify-center text-purple-300 hover:text-white">
+          <svg id="soundOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+          </svg>
+          <svg id="soundOffIcon" class="w-4 h-4 hidden text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+          </svg>
+        </button>
+
+        <button onmouseenter="playSound('hover')" onclick="openAuthModal()" class="btn-quantix px-5 py-2 rounded-full text-xs font-semibold text-white flex items-center gap-2">
+          <span>Sign In</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section id="hero" class="relative z-20 max-w-4xl mx-auto px-6 pt-24 pb-16 text-center">
+      <!-- Small Glass Badge inside the Horizon Arch -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-950/60 border border-purple-400/35 backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.35)] mb-6">
+        <svg class="w-3.5 h-3.5 text-purple-300 animate-spin" style="animation-duration: 7s;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/>
+        </svg>
+        <span class="text-[11px] font-medium tracking-wide text-purple-200">Optimize Exam Workflows with Multi-Modal LLMs</span>
+      </div>
+
+      <!-- Main Hero Title -->
+      <h1 class="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.14] glow-text text-white max-w-3xl mx-auto">
+        Elevate Exam Evaluation Using <span class="shimmer-text">AI-Driven Precision</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="mt-5 text-sm sm:text-base text-purple-200/70 max-w-xl mx-auto leading-relaxed font-normal">
+        An intelligent assessment platform powered by vision-language LLMs that evaluates OMR sheets, handwritten scripts, and complex rubrics in seconds.
+      </p>
+
+      <!-- Dual CTA Buttons -->
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <button onmouseenter="playSound('hover')" onclick="openAuthModal()" class="btn-quantix px-6 py-3 rounded-full text-xs sm:text-sm font-semibold text-white flex items-center gap-2.5">
+          <span>Enter Grader Studio</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+
+        <a href="#features" onmouseenter="playSound('hover')" onclick="playSound('click')" class="px-6 py-3 rounded-full text-xs sm:text-sm font-semibold text-purple-100 liquid-glass border-glow hover:bg-purple-900/30 flex items-center gap-2.5">
+          <span>Explore Architecture</span>
+          <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- HERO MOCKUP PREVIEW (Mirrors Reference Image Dashboard Window) -->
+    <section id="preview" class="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 mt-2">
+      <!-- Ambient Purple Glow Behind Mockup -->
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-3/4 h-28 bg-purple-500/25 blur-3xl pointer-events-none"></div>
+
+      <div class="liquid-glass border-glow rounded-[26px] p-5 sm:p-7 bg-[#090514]/90 shadow-[0_30px_100px_rgba(0,0,0,0.95)] relative overflow-hidden">
+        <!-- Top Window Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-purple-500/15">
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center shadow-[0_0_12px_#9333ea]">
+                <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6z"/></svg>
+              </div>
+              <span class="text-sm font-bold text-white">GraderLabs</span>
+            </div>
+
+            <!-- Fake Search Bar -->
+            <div class="hidden sm:flex items-center gap-2 bg-[#130b29] border border-purple-500/20 rounded-full px-4 py-1.5 w-64">
+              <svg class="w-3.5 h-3.5 text-purple-300/60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <span class="text-xs text-purple-300/50">Search rubric, batch or student ID...</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-[#150c2e] border border-purple-400/20 flex items-center justify-center text-purple-300">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <span class="text-xs font-semibold text-purple-100">Dean's Portal</span>
+            <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[1.5px]">
+              <div class="w-full h-full rounded-full bg-cosmic-900 flex items-center justify-center text-[10px] font-bold">GL</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mockup Body Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-6 items-stretch">
+          <!-- Left Mini Sidebar + Main Chart -->
+          <div class="lg:col-span-7 flex gap-4">
+            <!-- Left Floating Icon Rail -->
+            <div class="hidden sm:flex flex-col items-center gap-3 pt-8">
+              <div class="w-9 h-9 rounded-full bg-white text-cosmic-950 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.8)]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              </div>
+              <div class="w-9 h-9 rounded-full bg-[#140b29] border border-purple-500/20 text-purple-300/70 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              </div>
+              <div class="w-9 h-9 rounded-full bg-[#140b29] border border-purple-500/20 text-purple-300/70 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              </div>
+            </div>
+
+            <!-- Evaluation Velocity Column Card -->
+            <div class="flex-1">
+              <h3 class="text-xl font-bold text-white mb-3">Evaluation Velocity</h3>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="px-3.5 py-1 rounded-full text-[11px] font-semibold bg-purple-600 text-white shadow-[0_0_12px_#9333ea]">All Modes</span>
+                <span class="px-3.5 py-1 rounded-full text-[11px] font-medium bg-[#140b2b] text-purple-300/70 border border-purple-500/20">OMR Bubbles</span>
+                <span class="px-3.5 py-1 rounded-full text-[11px] font-medium bg-[#140b2b] text-purple-300/70 border border-purple-500/20">Handwritten</span>
+                <span class="px-3.5 py-1 rounded-full text-[11px] font-medium bg-[#140b2b] text-purple-300/70 border border-purple-500/20">Auto-Hybrid</span>
+              </div>
+
+              <!-- Bar Graph Subcard -->
+              <div class="liquid-glass border-glow rounded-2xl p-5 bg-[#100821]/90">
+                <div class="flex items-center justify-between mb-6">
+                  <span class="text-xs font-semibold text-purple-100">LLM Grading Throughput</span>
+                  <span class="text-[11px] text-purple-300/70 flex items-center gap-1">Live Telemetry &rarr;</span>
+                </div>
+
+                <div class="flex items-end gap-3 h-36 pt-6 px-2">
+                  <!-- Y Axis Labels -->
+                  <div class="flex flex-col justify-between h-full text-[10px] text-purple-300/40 pr-2 font-mono">
+                    <span>99%</span>
+                    <span>85%</span>
+                    <span>70%</span>
+                    <span>50%</span>
+                  </div>
+                  <!-- Bars -->
+                  <div class="flex-1 grid grid-cols-7 gap-2.5 items-end h-full">
+                    <div class="bg-purple-900/35 border border-purple-500/20 rounded-t-xl h-[45%]"></div>
+                    <div class="bg-purple-900/35 border border-purple-500/20 rounded-t-xl h-[68%]"></div>
+                    <div class="bg-purple-900/35 border border-purple-500/20 rounded-t-xl h-[52%]"></div>
+                    <div class="bg-purple-900/35 border border-purple-500/20 rounded-t-xl h-[62%]"></div>
+                    <!-- Highlighted Glowing Bar -->
+                    <div class="relative bg-gradient-to-t from-purple-700 via-purple-500 to-purple-300 rounded-t-xl h-[92%] shadow-[0_0_25px_rgba(168,85,247,0.8)] flex flex-col items-center">
+                      <div class=" -top-7 absolute px-2 py-0.5 rounded-full bg-[#1e113a] border border-purple-400/50 text-[9px] font-mono text-purple-100 whitespace-nowrap shadow-lg">
+                        99.8% Acc
+                      </div>
+                      <div class="w-2.5 h-2.5 rounded-full bg-cosmic-950 border-2 border-white mt-1.5"></div>
+                    </div>
+                    <div class="bg-purple-900/35 border border-purple-500/20 rounded-t-xl h-[60%]"></div>
+                    <div class="bg-purple-900/35 border border-purple-500/20 rounded-t-xl h-[74%]"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Glass Card Stack (Mirrors the glowing credit/stats card on right of reference) -->
+          <div class="lg:col-span-5 flex flex-col justify-between gap-4">
+            <div class="liquid-glass border-glow specular-beam rounded-2xl p-5 bg-[#120926]/90 flex-1 flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-purple-200">Neural Grading Engine</span>
+                <span class="text-[11px] text-purple-300/70">v4.2 Vision &rarr;</span>
+              </div>
+
+              <!-- Inner Glowing Pass Card -->
+              <div class="my-3 p-5 rounded-2xl bg-gradient-to-br from-[#23124c] via-[#13092b] to-[#3b1578] border border-purple-400/35 shadow-[0_10px_35px_rgba(124,58,237,0.35)] relative overflow-hidden">
+                <div class="absolute -bottom-6 -right-4 w-32 h-32 bg-purple-400/30 blur-2xl rounded-full"></div>
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-[10px] uppercase tracking-wider text-purple-300/70">Rubric Confidence</p>
+                    <p class="text-2xl font-bold text-white mt-0.5 font-mono">99.94% LLM</p>
+                  </div>
+                  <svg class="w-6 h-6 text-purple-300/80" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>
+                </div>
+                <div class="mt-5 flex items-center justify-between text-[10px] font-mono text-purple-200/70">
+                  <span>OMR + HANDWRITING PARSER</span>
+                  <span>LATENCY: 420ms</span>
+                </div>
+              </div>
+
+              <!-- Recent Pipeline Line -->
+              <div>
+                <div class="flex items-center justify-between text-xs mb-2">
+                  <span class="font-semibold text-white">Studio Pipeline</span>
+                  <button onclick="openAuthModal()" class="text-[11px] text-purple-300 hover:text-white">Open Studio &rarr;</button>
+                </div>
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-cosmic-950/60 border border-purple-500/15">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-full bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-300 text-xs font-bold">AI</div>
+                    <div>
+                      <p class="text-xs font-medium text-white">Auto-Detect Mode Ready</p>
+                      <p class="text-[10px] text-purple-300/50">Awaiting Question Paper & Key</p>
+                    </div>
+                  </div>
+                  <span class="text-xs font-mono font-semibold text-emerald-400">READY</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Fade Vignette like Reference -->
+        <div class=" inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#040209] to-transparent pointer-events-none absolute"></div>
+      </div>
+    </section>
+
+    <!-- TRUSTED BY LOGOS STRIP -->
+    <section class="max-w-5xl mx-auto px-6 pt-16 pb-10 text-center">
+      <p class="text-xs font-medium text-purple-200/60 tracking-wide mb-7">Trusted by 10,000+ Academic Institutions & EdTech Teams Worldwide</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 items-center opacity-70">
+        <div class="flex items-center justify-center gap-2 text-sm font-bold tracking-tight text-purple-100/80">
+          <span class="w-4 h-4 rounded-full border-2 border-purple-400 inline-block"></span> OXFORD LAB
+        </div>
+        <div class="flex items-center justify-center gap-2 text-sm font-bold tracking-tight text-purple-100/80">
+          <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2L2 7l8 5 8-5-8-5zM2 13l8 5 8-5"/></svg> STANFORD AI
+        </div>
+        <div class="flex items-center justify-center gap-1.5 text-sm font-extrabold tracking-widest text-purple-100/80">
+          EDUMETRIC
+        </div>
+        <div class="flex items-center justify-center gap-2 text-sm font-semibold text-purple-100/80">
+          <span>neuro</span><span class="px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200 text-xs">grade</span>
+        </div>
+        <div class="flex items-center justify-center gap-1 text-sm font-black tracking-wider text-purple-100/80">
+          APEX<span class="text-purple-400">OMR</span>
+        </div>
+        <div class="flex items-center justify-center gap-2 text-sm font-bold text-purple-100/80">
+          <span class="w-3.5 h-3.5 rotate-45 bg-purple-400/70 inline-block"></span> CORTEX EDU
+        </div>
+      </div>
+    </section>
+
+    <!-- BENTO FEATURES SECTION (Mirrors Reference 5-Card Layout with Top-Right Light Flare) -->
+    <section id="features" class="max-w-6xl mx-auto px-6 pt-14">
+      <!-- Section Header -->
+      <div class="text-center max-w-xl mx-auto mb-14">
+        <div class="inline-flex items-center gap-3 mb-3">
+          <span class="w-12 h-[1px] bg-gradient-to-r from-transparent to-purple-400"></span>
+          <span class="text-xs font-semibold uppercase tracking-widest text-purple-300">Features</span>
+          <span class="w-12 h-[1px] bg-gradient-to-l from-transparent to-purple-400"></span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight leading-tight glow-text">
+          Accelerate exam grading using streamlined LLM pipelines.
+        </h2>
+        <p class="mt-3 text-xs sm:text-sm text-purple-200/60 leading-relaxed">
+          All the neural tools you need to parse Question Papers, align Answer Keys, and grade OMR or handwritten Student Sheets with zero manual bias.
+        </p>
+      </div>
+
+      <!-- Row 1: 3 Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        
+        <!-- Card 1: GraderLabs AI Core (Circuit Node Graphic) -->
+        <div onmouseenter="playSound('hover')" class="liquid-glass border-glow specular-beam hover-lift p-6 flex flex-col justify-between min-h-[310px]">
+          <div class="h-44 flex items-center justify-center relative">
+            <!-- Circuit SVG lines -->
+            <svg class="w-full h-full opacity-75" viewBox="0 0 260 160" fill="none">
+              <path d="M20 80 H75 L95 60 H165 L185 80 H240" stroke="url(#gradLine1)" stroke-width="1.5"/>
+              <path d="M60 30 V55 L85 80 L60 105 V130" stroke="url(#gradLine1)" stroke-width="1.5"/>
+              <path d="M200 30 V55 L175 80 L200 105 V130" stroke="url(#gradLine1)" stroke-width="1.5"/>
+              <circle cx="40" cy="80" r="3" fill="#c084fc"/>
+              <circle cx="220" cy="80" r="3" fill="#c084fc"/>
+              <circle cx="60" cy="30" r="2.5" fill="#a855f7"/>
+              <circle cx="200" cy="130" r="2.5" fill="#a855f7"/>
+              <defs>
+                <linearGradient id="gradLine1" x1="0" y1="0" x2="260" y2="160" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#581c87" stop-opacity="0.1"/>
+                  <stop offset="0.5" stop-color="#c084fc" stop-opacity="0.9"/>
+                  <stop offset="1" stop-color="#581c87" stop-opacity="0.1"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <!-- Center Glowing Node -->
+            <div class="absolute w-16 h-16 rounded-full bg-[#1a0d36] border border-purple-400/50 flex items-center justify-center orb-glow">
+              <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C9.5 2 8 4 8 6.5S9.5 11 12 11s4-2 4-4.5S14.5 2 12 2zm0 11c-2.5 0-4 2-4 4.5S9.5 22 12 22s4-2 4-4.5S14.5 13 12 13zm-6.5-5.5C3 7.5 1.5 9.5 1.5 12s1.5 4.5 4 4.5 4-2 4-4.5-1.5-4.5-4-4.5zm13 0c-2.5 0-4 2-4 4.5s1.5 4.5 4 4.5 4-2 4-4.5-1.5-4.5-4-4.5z"/>
+              </svg>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">GraderLabs LLM Core</h3>
+            <p class="text-xs text-purple-200/60 mt-1.5 leading-relaxed">
+              Multi-modal reasoning engine that cross-references your Question Paper and Answer Key for semantic grading.
+            </p>
+          </div>
+        </div>
+
+        <!-- Card 2: Written + Rubric Alignment (Orbiting Avatars/Nodes Graphic) -->
+        <div onmouseenter="playSound('hover')" class="liquid-glass border-glow specular-beam hover-lift p-6 flex flex-col justify-between min-h-[310px]">
+          <div class="h-44 flex items-center justify-center relative">
+            <div class="w-36 h-36 rounded-full border border-purple-500/20 flex items-center justify-center relative">
+              <div class="w-24 h-24 rounded-full border border-purple-400/30 flex items-center justify-center">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-b from-purple-400 to-purple-700 flex items-center justify-center orb-glow">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+              </div>
+              <!-- Orbiting Badges -->
+              <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-purple-950 border border-purple-400/50 text-[9px] font-mono text-purple-200 shadow-md">A+ 98%</div>
+              <div class="absolute bottom-2 -left-2 px-2 py-0.5 rounded-full bg-purple-950 border border-purple-400/50 text-[9px] font-mono text-purple-200 shadow-md">OCR</div>
+              <div class="absolute bottom-3 -right-3 px-2 py-0.5 rounded-full bg-purple-950 border border-purple-400/50 text-[9px] font-mono text-purple-200 shadow-md">Rubric</div>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Written Script Evaluation</h3>
+            <p class="text-xs text-purple-200/60 mt-1.5 leading-relaxed">
+              Evaluates complex handwritten paragraphs, formulas, and diagrams with partial-credit rubric breakdown.
+            </p>
+          </div>
+        </div>
+
+        <!-- Card 3: Real-time Curve Integration (Mountain Wave Graph) -->
+        <div onmouseenter="playSound('hover')" class="liquid-glass border-glow specular-beam hover-lift p-6 flex flex-col justify-between min-h-[310px]">
+          <div class="h-44 flex items-center justify-center relative overflow-hidden">
+            <svg class="w-full h-36" viewBox="0 0 280 120" fill="none">
+              <path d="M0 95 Q35 90 55 72 T110 80 T155 32 T210 55 T280 25 L280 120 L0 120 Z" fill="url(#areaGrad)"/>
+              <path d="M0 95 Q35 90 55 72 T110 80 T155 32 T210 55 T280 25" stroke="#c084fc" stroke-width="2"/>
+              <line x1="155" y1="10" x2="155" y2="115" stroke="#e9d5ff" stroke-dasharray="3 3" stroke-width="1"/>
+              <circle cx="155" cy="32" r="4.5" fill="#ffffff" stroke="#9333ea" stroke-width="2.5"/>
+              <defs>
+                <linearGradient id="areaGrad" x1="140" y1="20" x2="140" y2="120" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#9333ea" stop-opacity="0.48"/>
+                  <stop offset="1" stop-color="#090514" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Answer Key Synchronization</h3>
+            <p class="text-xs text-purple-200/60 mt-1.5 leading-relaxed">
+              Ingest structured or unstructured Answer Keys and let the LLM normalize point distributions automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: 2 Wide Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <!-- Card 4: Intelligent OMR + Written Auto-Detection (Waveform Graphic) -->
+        <div onmouseenter="playSound('hover')" class="md:col-span-6 liquid-glass border-glow specular-beam hover-lift p-7 flex flex-col justify-between min-h-[300px]">
+          <div class="h-40 flex items-center justify-center relative">
+            <!-- Acoustic/Scanner Bars -->
+            <div class="flex items-center gap-1.5 w-full justify-center">
+              <span class="w-1 h-4 bg-purple-500/30 rounded-full"></span>
+              <span class="w-1 h-8 bg-purple-500/40 rounded-full"></span>
+              <span class="w-1 h-12 bg-purple-400/60 rounded-full"></span>
+              <span class="w-1 h-6 bg-purple-500/40 rounded-full"></span>
+              <span class="w-1 h-10 bg-purple-400/70 rounded-full"></span>
+              <span class="w-1 h-16 bg-purple-300 rounded-full"></span>
+              <span class="w-1 h-9 bg-purple-400/60 rounded-full"></span>
+              
+              <!-- Center Glowing Scanner Orb -->
+              <div class="mx-4 w-16 h-16 rounded-full bg-gradient-to-b from-purple-400 to-purple-700 flex items-center justify-center orb-glow relative">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </div>
+
+              <span class="w-1 h-9 bg-purple-400/60 rounded-full"></span>
+              <span class="w-1 h-16 bg-purple-300 rounded-full"></span>
+              <span class="w-1 h-10 bg-purple-400/70 rounded-full"></span>
+              <span class="w-1 h-6 bg-purple-500/40 rounded-full"></span>
+              <span class="w-1 h-12 bg-purple-400/60 rounded-full"></span>
+              <span class="w-1 h-8 bg-purple-500/40 rounded-full"></span>
+              <span class="w-1 h-4 bg-purple-500/30 rounded-full"></span>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">OMR + Written Auto-Detection</h3>
+            <p class="text-xs text-purple-200/60 mt-1.5 leading-relaxed">
+              Hybrid vision pipeline automatically distinguishes optical multiple-choice bubbles from handwritten subjective responses on the same sheet.
+            </p>
+          </div>
+        </div>
+
+        <!-- Card 5: Granular Data Visualization (Bar Chart Graphic) -->
+        <div onmouseenter="playSound('hover')" class="md:col-span-6 liquid-glass border-glow specular-beam hover-lift p-7 flex flex-col justify-between min-h-[300px]">
+          <div class="h-40 flex items-end justify-center gap-4 pt-6 px-4">
+            <div class="flex flex-col items-center gap-2 flex-1">
+              <div class="w-full h-20 rounded-xl bg-purple-900/35 border border-purple-500/20"></div>
+              <span class="text-[10px] text-purple-300/50">Q1</span>
+            </div>
+            <div class="flex flex-col items-center gap-2 flex-1">
+              <div class="w-full h-14 rounded-xl bg-purple-900/35 border border-purple-500/20"></div>
+              <span class="text-[10px] text-purple-300/50">Q2</span>
+            </div>
+            <div class="flex flex-col items-center gap-2 flex-1">
+              <div class="w-full h-24 rounded-xl bg-purple-900/35 border border-purple-500/20"></div>
+              <span class="text-[10px] text-purple-300/50">Q3</span>
+            </div>
+            <!-- Highlighted Bar -->
+            <div class="flex flex-col items-center gap-2 flex-1 relative">
+              <div class="-top-7 absolute px-2 py-0.5 rounded-full bg-[#1f113d] border border-purple-400/50 text-[9px] font-mono text-purple-100 whitespace-nowrap">
+                +10.0 PTS
+              </div>
+              <div class="w-full h-28 rounded-xl bg-gradient-to-t from-purple-700 via-purple-500 to-purple-300 shadow-[0_0_25px_rgba(168,85,247,0.85)] flex justify-center pt-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-cosmic-950 border-2 border-white"></span>
+              </div>
+              <span class="text-[10px] text-white font-semibold">Q4</span>
+            </div>
+            <div class="flex flex-col items-center gap-2 flex-1">
+              <div class="w-full h-16 rounded-xl bg-purple-900/35 border border-purple-500/20"></div>
+              <span class="text-[10px] text-purple-300/50">Q5</span>
+            </div>
+            <div class="flex flex-col items-center gap-2 flex-1">
+              <div class="w-full h-20 rounded-xl bg-purple-900/35 border border-purple-500/20"></div>
+              <span class="text-[10px] text-purple-300/50">Q6</span>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Per-Question Telemetry & Audit</h3>
+            <p class="text-xs text-purple-200/60 mt-1.5 leading-relaxed">
+              Effortlessly inspect question-by-question LLM justification, student handwriting confidence, and rubric point deductions.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Centered Button (Matches "Explore Features ->" in reference) -->
+      <div class="mt-12 text-center">
+        <button onmouseenter="playSound('hover')" onclick="openAuthModal()" class="btn-quantix px-7 py-3 rounded-full text-xs sm:text-sm font-semibold text-white inline-flex items-center gap-2">
+          <span>Launch GraderLabs Studio</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- FAKE AUTH SIGN-IN MODAL                                               -->
+  <!-- ===================================================================== -->
+  <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
+    <div class="liquid-glass border-glow border-glow-active specular-beam max-w-md w-full p-7 rounded-3xl relative animate-[fadeIn_0.25s_ease-out]">
+      <!-- Close Button -->
+      <button onclick="closeAuthModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-purple-950/70 border border-purple-500/30 flex items-center justify-center text-purple-300 hover:text-white">
+        &times;
+      </button>
+
+      <!-- Logo Header -->
+      <div class="flex items-center gap-2.5 mb-5">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-700 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.75)]">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white leading-none">Sign In to GraderLabs</h3>
+          <p class="text-[11px] text-purple-300/70 mt-1">LLM Assessment & Evaluation Workspace</p>
+        </div>
+      </div>
+
+      <form onsubmit="handleFakeSignIn(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-purple-200 mb-1.5">Evaluator / Institution Email</label>
+          <input id="authEmailInput" type="email" required value="evaluator@graderlabs.ai" class="w-full px-4 py-2.5 rounded-xl bg-[#090414]/90 border border-purple-500/35 text-sm text-white focus:outline-none focus:border-purple-400 shadow-inner" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-purple-200 mb-1.5">Workspace Access Key</label>
+          <input type="password" required value="••••••••••••" class="w-full px-4 py-2.5 rounded-xl bg-[#090414]/90 border border-purple-500/35 text-sm text-white focus:outline-none focus:border-purple-400 shadow-inner" />
+        </div>
+
+        <div class="p-3 rounded-xl bg-purple-950/40 border border-purple-500/25 flex items-center justify-between text-[11px] text-purple-200/80">
+          <span>Clean Workspace Mode:</span>
+          <span class="font-mono text-emerald-400 font-semibold">0 Demo Data (Fresh State)</span>
+        </div>
+
+        <button type="submit" class="w-full btn-quantix py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 mt-2">
+          <span>Authenticate & Initialize Workspace</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TRANSITION OVERLAY: ENTERING STUDIO / WORKSPACE SKELETON SHIMMER      -->
+  <!-- ===================================================================== -->
+  <div id="transitionPortal" class="fixed inset-0 z-[60] hidden flex-col items-center justify-center bg-[#040209]/95 backdrop-blur-2xl p-6">
+    <div class="max-w-lg w-full text-center">
+      <div class="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-700 flex items-center justify-center orb-glow">
+        <svg class="w-8 h-8 text-white animate-spin" style="animation-duration: 3s;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z"/>
+        </svg>
+      </div>
+      <h3 id="portalTitle" class="text-2xl font-bold shimmer-text">Initializing GraderLabs Neural Studio...</h3>
+      <p id="portalSub" class="text-xs text-purple-300/70 mt-1.5 font-mono">Mounting Vision-LLM Shards • Allocating Clean Telemetry</p>
+
+      <!-- Skeleton Shimmer Preview Cards -->
+      <div class="mt-7 space-y-3 text-left">
+        <div class="h-12 rounded-xl skeleton-box"></div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="h-20 rounded-xl skeleton-box"></div>
+          <div class="h-20 rounded-xl skeleton-box"></div>
+          <div class="h-20 rounded-xl skeleton-box"></div>
+        </div>
+        <div class="h-24 rounded-xl skeleton-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 2: AUTHENTICATED APP (DASHBOARD AT 0 + EVALUATION STUDIO)        -->
+  <!-- ===================================================================== -->
+  <div id="appView" class="hidden min-h-screen relative overflow-hidden pb-20">
+    <!-- Ambient Background Glows -->
+    <div class="cosmic-grid absolute inset-0 pointer-events-none opacity-60"></div>
+    <div class="absolute -top-32 left-1/3 w-[620px] h-[280px] bg-purple-600/20 blur-[140px] rounded-full pointer-events-none"></div>
+
+    <!-- Top App Navigation Bar -->
+    <header class="relative z-30 border-b border-purple-500/20 bg-[#070310]/80 backdrop-blur-xl">
+      <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <!-- Brand + Active Indicator -->
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-700 flex items-center justify-center shadow-[0_0_16px_#9333ea]">
+              <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z"/></svg>
+            </div>
+            <span class="font-bold text-white tracking-tight">GraderLabs</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-950 border border-purple-400/40 text-purple-300">LLM v4.2</span>
+          </div>
+
+          <!-- View Switcher Tabs: Dashboard vs Studio -->
+          <div class="flex items-center gap-1.5 p-1 rounded-full bg-[#130b26] border border-purple-500/25">
+            <button id="tabDashboardBtn" onclick="switchWorkspaceTab('dashboard')" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-600 text-white shadow-[0_0_14px_rgba(147,51,234,0.6)] transition">
+              Dashboard Overview
+            </button>
+            <button id="tabStudioBtn" onclick="enterStudioWithAnimation()" class="px-4 py-1.5 rounded-full text-xs font-medium text-purple-200/80 hover:text-white flex items-center gap-1.5 transition">
+              <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+              <span>Evaluation Studio</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right User Status & Sign Out -->
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSound()" class="px-3 py-1.5 rounded-full liquid-glass border-glow text-[11px] text-purple-200 flex items-center gap-1.5">
+            <span id="appSoundStatusDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>SFX</span>
+          </button>
+
+          <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#140b29] border border-purple-500/25">
+            <div class="w-5 h-5 rounded-full bg-gradient-to-tr from-purple-500 to-fuchsia-500 flex items-center justify-center text-[10px] font-bold text-white">EV</div>
+            <span id="signedInUserText" class="text-xs font-medium text-purple-100">evaluator@graderlabs.ai</span>
+          </div>
+
+          <button onclick="signOutToLanding()" class="px-3.5 py-1.5 rounded-full text-xs font-medium text-rose-300 hover:text-white bg-rose-950/40 border border-rose-500/30 transition">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- =================================================================== -->
+    <!-- SUB-VIEW A: DASHBOARD (Strictly Everything = 0 Initially!)          -->
+    <!-- =================================================================== -->
+    <main id="dashboardSection" class="relative z-20 max-w-7xl mx-auto px-6 pt-8">
+      <!-- Top Banner -->
+      <div class="liquid-glass border-glow specular-beam p-6 sm:p-8 rounded-3xl mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950/80 border border-purple-400/30 text-[11px] text-purple-300 mb-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Clean Session Initialized • Zero Pre-loaded Demo Data</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-white glow-text">Welcome to Your Evaluation Command Center</h1>
+          <p class="text-xs sm:text-sm text-purple-200/70 mt-1.5 max-w-2xl">
+            All metrics begin at <span class="font-mono text-white font-semibold">0</span>. Enter the <span class="text-purple-300 font-semibold">GraderLabs Studio</span> to select your evaluation mode and upload your Question Paper, Answer Key, and Student Sheets.
+          </p>
+        </div>
+
+        <button onmouseenter="playSound('hover')" onclick="enterStudioWithAnimation()" class="btn-quantix px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold text-white flex items-center gap-2.5 shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>Enter Evaluation Studio &rarr;</span>
+        </button>
+      </div>
+
+      <!-- 4 KPI Stat Cards (All 0 at Start!) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <!-- KPI 1 -->
+        <div class="liquid-glass border-glow specular-beam p-5 rounded-2xl">
+          <div class="flex items-center justify-between text-xs text-purple-300/70">
+            <span>Total Sheets Evaluated</span>
+            <span class="px-2 py-0.5 rounded-full bg-purple-950 border border-purple-500/30 font-mono text-[10px]">ALL</span>
+          </div>
+          <p id="statTotalEvaluated" class="text-3xl font-extrabold text-white font-mono mt-3 glow-text">0</p>
+          <p id="statTotalSub" class="text-[11px] text-purple-300/50 mt-2">0 batches processed in session</p>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="liquid-glass border-glow specular-beam p-5 rounded-2xl">
+          <div class="flex items-center justify-between text-xs text-purple-300/70">
+            <span>OMR Sheets Graded</span>
+            <span class="px-2 py-0.5 rounded-full bg-purple-950 border border-purple-500/30 font-mono text-[10px]">OPTICAL</span>
+          </div>
+          <p id="statOmrCount" class="text-3xl font-extrabold text-white font-mono mt-3 glow-text">0</p>
+          <p class="text-[11px] text-purple-300/50 mt-2">Bubble matrix evaluations: <span id="statOmrBubbles">0</span></p>
+        </div>
+
+        <!-- KPI 3 -->
+        <div class="liquid-glass border-glow specular-beam p-5 rounded-2xl">
+          <div class="flex items-center justify-between text-xs text-purple-300/70">
+            <span>Written Scripts Graded</span>
+            <span class="px-2 py-0.5 rounded-full bg-purple-950 border border-purple-500/30 font-mono text-[10px]">LLM OCR</span>
+          </div>
+          <p id="statWrittenCount" class="text-3xl font-extrabold text-white font-mono mt-3 glow-text">0</p>
+          <p class="text-[11px] text-purple-300/50 mt-2">Handwritten answers parsed: <span id="statWrittenLines">0</span></p>
+        </div>
+
+        <!-- KPI 4 -->
+        <div class="liquid-glass border-glow specular-beam p-5 rounded-2xl">
+          <div class="flex items-center justify-between text-xs text-purple-300/70">
+            <span>Mean Score / Rubric Match</span>
+            <span class="px-2 py-0.5 rounded-full bg-purple-950 border border-purple-500/30 font-mono text-[10px]">AVG</span>
+          </div>
+          <p id="statAvgScore" class="text-3xl font-extrabold text-white font-mono mt-3 glow-text">0%</p>
+          <p class="text-[11px] text-purple-300/50 mt-2">Uploaded assets: <span id="statUploadedAssets">0 / 3</span></p>
+        </div>
+      </div>
+
+      <!-- Blank State Telemetry & Evaluation Log -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left: Live Evaluation Distribution (Starts at 0) -->
+        <div class="lg:col-span-7 liquid-glass border-glow p-6 rounded-3xl flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">Evaluation Distribution Telemetry</h3>
+              <p class="text-xs text-purple-300/60">Updates automatically after Studio LLM grading run</p>
+            </div>
+            <span id="telemetryStatusBadge" class="px-3 py-1 rounded-full text-[11px] font-mono bg-purple-950/90 border border-purple-500/30 text-purple-300">0 DATA POINTS</span>
+          </div>
+
+          <!-- Empty State / Live Bars Container -->
+          <div id="dashboardChartEmpty" class="my-6 py-12 px-4 rounded-2xl border border-dashed border-purple-500/25 bg-[#0a0517]/60 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-purple-950/80 border border-purple-400/30 flex items-center justify-center mx-auto mb-3 text-purple-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-white">0 Evaluations Recorded</p>
+            <p class="text-xs text-purple-300/60 max-w-sm mx-auto mt-1">
+              Your workspace is clean with zero demo records. Launch the Studio to upload your exam assets and run an evaluation.
+            </p>
+            <button onclick="enterStudioWithAnimation()" class="mt-4 px-4 py-2 rounded-full text-xs font-semibold bg-purple-600/30 border border-purple-400/50 text-purple-100 hover:bg-purple-600 transition">
+              Open Studio & Upload Documents &rarr;
+            </button>
+          </div>
+
+          <!-- Populated Chart (Hidden until user runs an evaluation in Studio) -->
+          <div id="dashboardChartPopulated" class="hidden my-4">
+            <div id="dashboardBarsContainer" class="grid grid-cols-5 gap-4 items-end h-44 pt-8 px-4 bg-[#0a0517]/60 rounded-2xl border border-purple-500/20">
+              <!-- Populated dynamically after Studio evaluation -->
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-purple-300/50 pt-3 border-t border-purple-500/15 font-mono">
+            <span>QUEUE: 0 PENDING</span>
+            <span id="lastEvalTimestamp">LAST EVALUATION: NEVER (0)</span>
+          </div>
+        </div>
+
+        <!-- Right: Uploaded Document Pipeline Status (All 0) -->
+        <div class="lg:col-span-5 liquid-glass border-glow p-6 rounded-3xl flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white">Document Matrix Status</h3>
+            <p class="text-xs text-purple-300/60 mb-5">Current session files mounted in GraderLabs Studio</p>
+
+            <div class="space-y-3">
+              <div class="p-3.5 rounded-2xl bg-[#0c061c] border border-purple-500/20 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-purple-950 border border-purple-400/30 flex items-center justify-center text-purple-300 font-mono text-xs">QP</div>
+                  <div>
+                    <p class="text-xs font-semibold text-white">Question Paper</p>
+                    <p id="dashQpStatus" class="text-[11px] text-purple-300/50">0 files uploaded</p>
+                  </div>
+                </div>
+                <span id="dashQpBadge" class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-purple-950 text-purple-300/60 border border-purple-500/20">0 MB</span>
+              </div>
+
+              <div class="p-3.5 rounded-2xl bg-[#0c061c] border border-purple-500/20 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-purple-950 border border-purple-400/30 flex items-center justify-center text-purple-300 font-mono text-xs">AK</div>
+                  <div>
+                    <p class="text-xs font-semibold text-white">Answer Key / Rubric</p>
+                    <p id="dashAkStatus" class="text-[11px] text-purple-300/50">0 files uploaded</p>
+                  </div>
+                </div>
+                <span id="dashAkBadge" class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-purple-950 text-purple-300/60 border border-purple-500/20">0 MB</span>
+              </div>
+
+              <div class="p-3.5 rounded-2xl bg-[#0c061c] border border-purple-500/20 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-purple-950 border border-purple-400/30 flex items-center justify-center text-purple-300 font-mono text-xs">SS</div>
+                  <div>
+                    <p class="text-xs font-semibold text-white">Student Sheet(s)</p>
+                    <p id="dashSsStatus" class="text-[11px] text-purple-300/50">0 files uploaded</p>
+                  </div>
+                </div>
+                <span id="dashSsBadge" class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-purple-950 text-purple-300/60 border border-purple-500/20">0 MB</span>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="enterStudioWithAnimation()" class="mt-6 w-full py-3 rounded-xl liquid-glass border-glow text-xs font-semibold text-purple-100 hover:text-white hover:bg-purple-800/30 transition">
+            Configure & Upload in Studio &rarr;
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- SUB-VIEW B: GRADERLABS EVALUATION STUDIO                            -->
+    <!-- =================================================================== -->
+    <section id="studioSection" class="hidden relative z-20 max-w-7xl mx-auto px-6 pt-8">
+      
+      <!-- Studio Header Bar -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-purple-500/20">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950 border border-purple-400/40 text-[11px] font-mono text-purple-200 mb-2">
+            <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+            <span>GRADERLABS NEURAL STUDIO</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-bold shimmer-text">AI Exam Evaluation Studio</h2>
+          <p class="text-xs text-purple-200/70 mt-1">Select your grading pipeline, mount the 3 core assessment documents, and invoke the LLM evaluator.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="resetStudioToZero()" class="px-4 py-2 rounded-xl bg-[#140a29] border border-purple-500/30 text-xs font-medium text-purple-300 hover:text-white transition">
+            Reset Studio to 0
+          </button>
+          <button onclick="switchWorkspaceTab('dashboard')" class="px-4 py-2 rounded-xl liquid-glass border-glow text-xs font-semibold text-white">
+            &larr; Back to Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 1: EVALUATION MODE SELECTOR (3 Options with Border Glow Gradient) -->
+      <div class="mt-7">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-purple-300">Step 1 — Select Evaluation Engine Mode</span>
+          <span id="selectedModeLabel" class="text-xs font-mono text-purple-200">Active: OMR + Written (Auto Detection)</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Mode 1: OMR Evaluation -->
+          <div id="modeCard-omr" role="button" tabindex="0" aria-pressed="false" onkeydown="handleModeKey(event, 'omr')" onclick="selectEvalMode('omr')" onmouseenter="playSound('hover')" class="cursor-pointer liquid-glass border-glow specular-beam p-5 rounded-2xl transition">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-400/40 flex items-center justify-center text-purple-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <span class="mode-pill px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-950/90 border border-purple-500/30 text-purple-300">OPTICAL MATRIX</span>
+            </div>
+            <h3 class="text-base font-bold text-white glow-text">OMR Evaluation</h3>
+            <p class="text-xs text-purple-200/65 mt-1 leading-relaxed">
+              High-speed optical bubble grid detection with sub-millimeter skew correction and multi-choice validation.
+            </p>
+          </div>
+
+          <!-- Mode 2: Written Evaluation -->
+          <div id="modeCard-written" role="button" tabindex="0" aria-pressed="false" onkeydown="handleModeKey(event, 'written')" onclick="selectEvalMode('written')" onmouseenter="playSound('hover')" class="cursor-pointer liquid-glass border-glow specular-beam p-5 rounded-2xl transition">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-400/40 flex items-center justify-center text-purple-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </div>
+              <span class="mode-pill px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-950/90 border border-purple-500/30 text-purple-300">HANDWRITING LLM</span>
+            </div>
+            <h3 class="text-base font-bold text-white glow-text">Written Evaluation</h3>
+            <p class="text-xs text-purple-200/65 mt-1 leading-relaxed">
+              Deep vision-language transcription for long-form essays, mathematical derivations, and step-by-step rubrics.
+            </p>
+          </div>
+
+          <!-- Mode 3: OMR + Written Evaluation (Auto Detection) - Default Active -->
+          <div id="modeCard-hybrid" role="button" tabindex="0" aria-pressed="true" onkeydown="handleModeKey(event, 'hybrid')" onclick="selectEvalMode('hybrid')" onmouseenter="playSound('hover')" class="cursor-pointer liquid-glass border-glow border-glow-active specular-beam p-5 rounded-2xl transition">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-700 flex items-center justify-center text-white shadow-[0_0_15px_#9333ea]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <span class="mode-pill px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-600 text-white shadow-[0_0_10px_#9333ea]">AUTO DETECTION</span>
+            </div>
+            <h3 class="text-base font-bold shimmer-text">OMR + Written Evaluation</h3>
+            <p class="text-xs text-purple-200/75 mt-1 leading-relaxed">
+              Autonomous neural segmentation detects both OMR bubble sections and handwritten responses in a single pass.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: UPLOAD ARTIFACTS MATRIX (Question Paper, Student Sheet, Answer Key) -->
+      <div class="mt-8">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-purple-300">Step 2 — Upload Assessment Documents (Starts at 0/3)</span>
+          <span class="text-[11px] text-purple-300/70">Select local PDF/Image files or use the instant synthetic scan generator on any slot</span>
+        </div>
+
+        <!-- Hidden Native File Input -->
+        <input id="hiddenFileInput" type="file" accept=".pdf,.png,.jpg,.jpeg,.json,.txt" class="hidden" onchange="handleNativeFileSelect(event)" />
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          
+          <!-- Slot 1: Question Paper -->
+          <div id="uploadCard-qp" class="liquid-glass border-glow p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-purple-950 border border-purple-500/30 text-purple-300">SLOT 01 • REQUIRED</span>
+                <span id="slotStatus-qp" class="text-xs font-mono text-purple-400/60">0 UPLOADED</span>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-purple-950/90 border border-purple-400/35 flex items-center justify-center text-purple-300 mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              </div>
+              <h4 class="text-base font-bold text-white">Question Paper</h4>
+              <p class="text-xs text-purple-200/60 mt-1">Upload the master exam paper containing question prompts, marks weightage, and section structure.</p>
+            </div>
+
+            <!-- Shimmer Skeleton during upload -->
+            <div id="slotSkeleton-qp" class="hidden my-4 space-y-2">
+              <div class="h-4 rounded skeleton-box w-3/4"></div>
+              <div class="h-8 rounded-lg skeleton-box w-full"></div>
+            </div>
+
+            <!-- File Meta Preview -->
+            <div id="slotFileBox-qp" class="hidden my-4 p-3 rounded-xl bg-emerald-950/30 border border-emerald-400/40 flex items-center justify-between">
+              <div class="truncate pr-2">
+                <p id="slotFileName-qp" class="text-xs font-semibold text-emerald-200 truncate"></p>
+                <p class="text-[10px] font-mono text-emerald-300/70">Parsed • 20 Questions Indexed</p>
+              </div>
+              <span class="text-xs font-mono text-emerald-400 font-bold">&#10003;</span>
+            </div>
+
+            <div class="mt-5 flex items-center gap-2">
+              <button onclick="triggerSlotFilePicker('qp')" class="flex-1 py-2.5 px-3 rounded-xl bg-purple-600/25 hover:bg-purple-600/45 border border-purple-400/40 text-xs font-semibold text-white transition">
+                Browse File...
+              </button>
+              <button onclick="simulateDocumentUpload('qp', 'CS301_Final_Question_Paper.pdf', '1.8 MB')" title="Mount Synthetic Scan" class="py-2.5 px-3 rounded-xl bg-[#160c2e] hover:bg-purple-900/50 border border-purple-500/30 text-[11px] font-mono text-purple-200 transition">
+                + Quick Scan
+              </button>
+            </div>
+          </div>
+
+          <!-- Slot 2: Answer Key -->
+          <div id="uploadCard-ak" class="liquid-glass border-glow p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-purple-950 border border-purple-500/30 text-purple-300">SLOT 02 • REQUIRED</span>
+                <span id="slotStatus-ak" class="text-xs font-mono text-purple-400/60">0 UPLOADED</span>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-purple-950/90 border border-purple-400/35 flex items-center justify-center text-purple-300 mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+              </div>
+              <h4 class="text-base font-bold text-white">Answer Key</h4>
+              <p class="text-xs text-purple-200/60 mt-1">Upload the official OMR bubble key and marking rubric for LLM semantic comparison.</p>
+            </div>
+
+            <!-- Shimmer Skeleton during upload -->
+            <div id="slotSkeleton-ak" class="hidden my-4 space-y-2">
+              <div class="h-4 rounded skeleton-box w-2/3"></div>
+              <div class="h-8 rounded-lg skeleton-box w-full"></div>
+            </div>
+
+            <!-- File Meta Preview -->
+            <div id="slotFileBox-ak" class="hidden my-4 p-3 rounded-xl bg-emerald-950/30 border border-emerald-400/40 flex items-center justify-between">
+              <div class="truncate pr-2">
+                <p id="slotFileName-ak" class="text-xs font-semibold text-emerald-200 truncate"></p>
+                <p class="text-[10px] font-mono text-emerald-300/70">Rubric Vectors Embedded</p>
+              </div>
+              <span class="text-xs font-mono text-emerald-400 font-bold">&#10003;</span>
+            </div>
+
+            <div class="mt-5 flex items-center gap-2">
+              <button onclick="triggerSlotFilePicker('ak')" class="flex-1 py-2.5 px-3 rounded-xl bg-purple-600/25 hover:bg-purple-600/45 border border-purple-400/40 text-xs font-semibold text-white transition">
+                Browse File...
+              </button>
+              <button onclick="simulateDocumentUpload('ak', 'CS301_Master_AnswerKey_Rubric.pdf', '0.9 MB')" title="Mount Synthetic Key" class="py-2.5 px-3 rounded-xl bg-[#160c2e] hover:bg-purple-900/50 border border-purple-500/30 text-[11px] font-mono text-purple-200 transition">
+                + Quick Key
+              </button>
+            </div>
+          </div>
+
+          <!-- Slot 3: Student Sheet -->
+          <div id="uploadCard-ss" class="liquid-glass border-glow p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-purple-950 border border-purple-500/30 text-purple-300">SLOT 03 • REQUIRED</span>
+                <span id="slotStatus-ss" class="text-xs font-mono text-purple-400/60">0 UPLOADED</span>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-purple-950/90 border border-purple-400/35 flex items-center justify-center text-purple-300 mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              </div>
+              <h4 class="text-base font-bold text-white">Student Sheet</h4>
+              <p class="text-xs text-purple-200/60 mt-1">Upload scanned OMR response sheets, handwritten booklets, or combined hybrid scripts.</p>
+            </div>
+
+            <!-- Shimmer Skeleton during upload -->
+            <div id="slotSkeleton-ss" class="hidden my-4 space-y-2">
+              <div class="h-4 rounded skeleton-box w-4/5"></div>
+              <div class="h-8 rounded-lg skeleton-box w-full"></div>
+            </div>
+
+            <!-- File Meta Preview -->
+            <div id="slotFileBox-ss" class="hidden my-4 p-3 rounded-xl bg-emerald-950/30 border border-emerald-400/40 flex items-center justify-between">
+              <div class="truncate pr-2">
+                <p id="slotFileName-ss" class="text-xs font-semibold text-emerald-200 truncate"></p>
+                <p class="text-[10px] font-mono text-emerald-300/70">Optical + Script Ready</p>
+              </div>
+              <span class="text-xs font-mono text-emerald-400 font-bold">&#10003;</span>
+            </div>
+
+            <div class="mt-5 flex items-center gap-2">
+              <button onclick="triggerSlotFilePicker('ss')" class="flex-1 py-2.5 px-3 rounded-xl bg-purple-600/25 hover:bg-purple-600/45 border border-purple-400/40 text-xs font-semibold text-white transition">
+                Browse File...
+              </button>
+              <button onclick="simulateDocumentUpload('ss', 'Student_Script_Batch_01.pdf', '4.2 MB')" title="Mount Synthetic Student Script" class="py-2.5 px-3 rounded-xl bg-[#160c2e] hover:bg-purple-900/50 border border-purple-500/30 text-[11px] font-mono text-purple-200 transition">
+                + Quick Sheet
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STEP 3: LLM EXECUTION BAR & SKELETON EVALUATION OUTPUT -->
+      <div class="mt-8 liquid-glass border-glow specular-beam p-6 rounded-3xl">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-700 flex items-center justify-center orb-glow shrink-0">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <h4 class="text-base font-bold text-white">Neural LLM Grading Execution</h4>
+              <p id="studioReadinessText" class="text-xs text-purple-300/70">0 of 3 required documents uploaded. Mount Question Paper, Answer Key, and Student Sheet to begin.</p>
+            </div>
+          </div>
+
+          <button id="runEvaluationBtn" onclick="executeLlmEvaluation()" class="btn-quantix px-7 py-3.5 rounded-2xl text-xs sm:text-sm font-semibold text-white flex items-center gap-2.5 opacity-60">
+            <span>Run AI Evaluation Pipeline</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </div>
+
+        <!-- Skeleton Shimmer Processing Box (Shown while LLM evaluates) -->
+        <div id="evalSkeletonContainer" class="hidden mt-6 pt-6 border-t border-purple-500/20 space-y-4">
+          <div class="flex items-center justify-between">
+            <span id="evalStepText" class="text-xs font-mono shimmer-text font-semibold">LLM Vision Pass 1/3: Segmenting OMR Bubbles & Handwritten Regions...</span>
+            <span class="text-xs font-mono text-purple-300 animate-pulse">PROCESSING</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="h-20 rounded-xl skeleton-box"></div>
+            <div class="h-20 rounded-xl skeleton-box"></div>
+            <div class="h-20 rounded-xl skeleton-box"></div>
+            <div class="h-20 rounded-xl skeleton-box"></div>
+          </div>
+          <div class="h-28 rounded-xl skeleton-box"></div>
+        </div>
+
+        <!-- Live Evaluation Result Output (Hidden initially so workspace starts 100% blank/0) -->
+        <div id="evalResultContainer" class="hidden mt-6 pt-6 border-t border-purple-500/20">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 rounded-full text-[11px] font-mono bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-semibold">EVALUATION COMPLETE</span>
+              <span id="resultModeBadge" class="px-3 py-1 rounded-full text-[11px] font-mono bg-purple-950 border border-purple-400/40 text-purple-200">HYBRID AUTO-DETECT</span>
+            </div>
+            <button onclick="switchWorkspaceTab('dashboard')" class="text-xs font-semibold text-purple-300 hover:text-white underline">
+              View Updated Dashboard Metrics &rarr;
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-2xl bg-[#0c061c] border border-purple-500/30">
+              <p class="text-[11px] text-purple-300/60 font-mono">FINAL EVALUATED SCORE</p>
+              <p id="resScoreText" class="text-2xl font-extrabold text-white font-mono mt-1 glow-text">94 / 100 (94%)</p>
+              <p class="text-[11px] text-emerald-400 mt-1">Rubric Confidence: 99.6%</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-[#0c061c] border border-purple-500/30">
+              <p class="text-[11px] text-purple-300/60 font-mono">OMR SECTION PARSED</p>
+              <p id="resOmrText" class="text-2xl font-extrabold text-white font-mono mt-1">38 / 40 Bubbles</p>
+              <p class="text-[11px] text-purple-300/70 mt-1">Zero ambiguous erasures</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-[#0c061c] border border-purple-500/30">
+              <p class="text-[11px] text-purple-300/60 font-mono">WRITTEN RUBRIC ALIGNMENT</p>
+              <p id="resWrittenText" class="text-2xl font-extrabold text-white font-mono mt-1">56 / 60 Marks</p>
+              <p class="text-[11px] text-purple-300/70 mt-1">Partial credit awarded on Q14</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- INTERACTIVE JAVASCRIPT + WEB AUDIO SYNTHESIZER                        -->
+  <!-- ===================================================================== -->
+  <script>
+    // -----------------------------------------------------------------------
+    // 1. WEB AUDIO API FEEDBACK SOUND SYNTHESIZER (No external audio files)
+    // -----------------------------------------------------------------------
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+
+      if (type === 'hover') {
+        // Subtle glassy tick
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(680, now);
+        osc.frequency.exponentialRampToValueAtTime(920, now + 0.035);
+        gain.gain.setValueAtTime(0.018, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } else if (type === 'click') {
+        // Crisp UI tap
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(240, now + 0.065);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.07);
+      } else if (type === 'portal') {
+        // Ethereal studio entering chord sweep
+        const freqs = [261.63, 329.63, 392.00, 523.25];
+        freqs.forEach((f, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f * 0.85, now + idx * 0.04);
+          osc.frequency.exponentialRampToValueAtTime(f, now + 0.45);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.035, now + 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.65);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.04);
+          osc.stop(now + 0.7);
+        });
+      } else if (type === 'upload') {
+        // Ascending two-tone confirmation chime
+        [587.33, 880].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.08);
+          gain.gain.setValueAtTime(0.05, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.18);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.2);
+        });
+      } else if (type === 'success') {
+        // Harmonic completion arpeggio
+        [440, 554.37, 659.25, 880].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.07);
+          gain.gain.setValueAtTime(0.055, now + i * 0.07);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.32);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.07);
+          osc.stop(now + i * 0.07 + 0.35);
+        });
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundOnIcon').classList.toggle('hidden', !soundEnabled);
+      document.getElementById('soundOffIcon').classList.toggle('hidden', soundEnabled);
+      const dot = document.getElementById('appSoundStatusDot');
+      if (dot) {
+        dot.className = soundEnabled
+          ? 'w-2 h-2 rounded-full bg-emerald-400'
+          : 'w-2 h-2 rounded-full bg-rose-400';
+      }
+      if (soundEnabled) playSound('click');
+      showToast(soundEnabled ? 'UI Feedback Sounds Enabled' : 'UI Feedback Sounds Muted');
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. TOAST NOTIFICATION HELPER
+    // -----------------------------------------------------------------------
+    function showToast(message, badge = 'SYSTEM') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'liquid-glass border-glow px-4 py-3 rounded-2xl flex items-center gap-3 text-xs text-white shadow-2xl pointer-events-auto transition-all duration-300';
+      toast.innerHTML = `
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-600 text-white">${badge}</span>
+        <span class="font-medium text-purple-100">${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. APPLICATION STATE (Starts strictly at ZERO / Blank after Sign-In)
+    // -----------------------------------------------------------------------
+    const appState = {
+      selectedMode: 'hybrid', // 'omr' | 'written' | 'hybrid'
+      activeUploadSlot: null,
+      uploads: {
+        qp: null, // Question Paper
+        ak: null, // Answer Key
+        ss: null  // Student Sheet
+      },
+      metrics: {
+        totalEvaluated: 0,
+        omrCount: 0,
+        omrBubbles: 0,
+        writtenCount: 0,
+        writtenLines: 0,
+        avgScore: 0,
+        historyScores: []
+      }
+    };
+
+    // -----------------------------------------------------------------------
+    // 4. AUTH MODAL & SIGN-IN TRANSITION
+    // -----------------------------------------------------------------------
+    function openAuthModal() {
+      playSound('click');
+      const modal = document.getElementById('authModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAuthModal() {
+      playSound('click');
+      const modal = document.getElementById('authModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleFakeSignIn(e) {
+      e.preventDefault();
+      playSound('portal');
+      const email = document.getElementById('authEmailInput').value || 'evaluator@graderlabs.ai';
+      document.getElementById('signedInUserText').textContent = email;
+
+      closeAuthModal();
+
+      // Ensure state is 100% reset to 0 on fresh sign-in
+      resetAllMetricsToZero();
+
+      // Trigger Portal Shimmer Transition
+      const portal = document.getElementById('transitionPortal');
+      document.getElementById('portalTitle').textContent = 'Authenticating & Initializing Clean Workspace...';
+      document.getElementById('portalSub').textContent = 'Setting Dashboard Telemetry to 0 • Mounting LLM Vision Nodes';
+      portal.classList.remove('hidden');
+      portal.classList.add('flex');
+
+      setTimeout(() => {
+        document.getElementById('landingView').classList.add('hidden');
+        document.getElementById('appView').classList.remove('hidden');
+        switchWorkspaceTab('dashboard', false);
+        portal.classList.add('hidden');
+        portal.classList.remove('flex');
+        playSound('success');
+        showToast('Signed in! All metrics initialized at 0.', 'AUTH');
+      }, 1200);
+    }
+
+    function signOutToLanding() {
+      playSound('click');
+      document.getElementById('appView').classList.add('hidden');
+      document.getElementById('landingView').classList.remove('hidden');
+      showToast('Signed out of GraderLabs Studio', 'SESSION');
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. STUDIO ENTERING ANIMATION & TAB SWITCHING
+    // -----------------------------------------------------------------------
+    function enterStudioWithAnimation() {
+      playSound('portal');
+      const portal = document.getElementById('transitionPortal');
+      document.getElementById('portalTitle').textContent = 'Entering GraderLabs Evaluation Studio...';
+      document.getElementById('portalSub').textContent = 'Loading OMR Matrix, Handwritten OCR & Auto-Detection Shards';
+      portal.classList.remove('hidden');
+      portal.classList.add('flex');
+
+      setTimeout(() => {
+        switchWorkspaceTab('studio', false);
+        portal.classList.add('hidden');
+        portal.classList.remove('flex');
+        showToast('Studio Ready — Select mode & upload documents', 'STUDIO');
+      }, 950);
+    }
+
+    function switchWorkspaceTab(tab, withSound = true) {
+      if (withSound) playSound('click');
+      const dashSec = document.getElementById('dashboardSection');
+      const studioSec = document.getElementById('studioSection');
+      const dashBtn = document.getElementById('tabDashboardBtn');
+      const studioBtn = document.getElementById('tabStudioBtn');
+
+      if (tab === 'dashboard') {
+        dashSec.classList.remove('hidden');
+        studioSec.classList.add('hidden');
+        dashBtn.className = 'px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-600 text-white shadow-[0_0_14px_rgba(147,51,234,0.6)] transition';
+        studioBtn.className = 'px-4 py-1.5 rounded-full text-xs font-medium text-purple-200/80 hover:text-white flex items-center gap-1.5 transition';
+      } else {
+        dashSec.classList.add('hidden');
+        studioSec.classList.remove('hidden');
+        studioBtn.className = 'px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-600 text-white shadow-[0_0_14px_rgba(147,51,234,0.6)] flex items-center gap-1.5 transition';
+        dashBtn.className = 'px-4 py-1.5 rounded-full text-xs font-medium text-purple-200/80 hover:text-white transition';
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 6. STUDIO EVALUATION MODE SELECTION (OMR / Written / Hybrid Auto)
+    // -----------------------------------------------------------------------
+    function handleModeKey(event, mode) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectEvalMode(mode);
+      }
+    }
+
+    function selectEvalMode(mode) {
+      playSound('click');
+      appState.selectedMode = mode;
+
+      const modes = ['omr', 'written', 'hybrid'];
+      modes.forEach(m => {
+        const card = document.getElementById(`modeCard-${m}`);
+        card.setAttribute('aria-pressed', String(m === mode));
+        if (m === mode) {
+          card.classList.add('border-glow-active');
+        } else {
+          card.classList.remove('border-glow-active');
+        }
+      });
+
+      const modeNames = {
+        omr: 'OMR Evaluation (Optical Bubble Matrix)',
+        written: 'Written Evaluation (Handwritten LLM Rubric)',
+        hybrid: 'OMR + Written (Auto Detection)'
+      };
+      document.getElementById('selectedModeLabel').textContent = `Active: ${modeNames[mode]}`;
+      showToast(`Mode switched to ${modeNames[mode]}`, 'ENGINE');
+    }
+
+    // -----------------------------------------------------------------------
+    // 7. DOCUMENT UPLOADING (Question Paper, Answer Key, Student Sheet)
+    // -----------------------------------------------------------------------
+    function triggerSlotFilePicker(slotKey) {
+      playSound('click');
+      appState.activeUploadSlot = slotKey;
+      const input = document.getElementById('hiddenFileInput');
+      input.value = '';
+      input.click();
+    }
+
+    function handleNativeFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file || !appState.activeUploadSlot) return;
+      const sizeMB = (Math.max(0.2, file.size / (1024 * 1024))).toFixed(1) + ' MB';
+      simulateDocumentUpload(appState.activeUploadSlot, file.name, sizeMB);
+    }
+
+    function simulateDocumentUpload(slotKey, fileName, fileSize) {
+      playSound('click');
+      const skeleton = document.getElementById(`slotSkeleton-${slotKey}`);
+      const fileBox = document.getElementById(`slotFileBox-${slotKey}`);
+      const statusText = document.getElementById(`slotStatus-${slotKey}`);
+      const card = document.getElementById(`uploadCard-${slotKey}`);
+
+      // Show skeleton shimmer first
+      fileBox.classList.add('hidden');
+      skeleton.classList.remove('hidden');
+      statusText.textContent = 'INDEXING...';
+      statusText.className = 'text-xs font-mono text-purple-300 animate-pulse';
+
+      setTimeout(() => {
+        skeleton.classList.add('hidden');
+        fileBox.classList.remove('hidden');
+        document.getElementById(`slotFileName-${slotKey}`).textContent = fileName;
+        statusText.textContent = '1 UPLOADED';
+        statusText.className = 'text-xs font-mono text-emerald-400 font-semibold';
+        card.classList.add('border-glow-active');
+
+        appState.uploads[slotKey] = { name: fileName, size: fileSize };
+        playSound('upload');
+
+        updateUploadCountersAndDashboard();
+        const slotTitles = { qp: 'Question Paper', ak: 'Answer Key', ss: 'Student Sheet' };
+        showToast(`${slotTitles[slotKey]} mounted (${fileName})`, 'UPLOAD');
+      }, 650);
+    }
+
+    function updateUploadCountersAndDashboard() {
+      const uploadedCount = Object.values(appState.uploads).filter(Boolean).length;
+      document.getElementById('statUploadedAssets').textContent = `${uploadedCount} / 3`;
+
+      // Update Dashboard Document Matrix Cards
+      const map = [
+        { key: 'qp', statusId: 'dashQpStatus', badgeId: 'dashQpBadge' },
+        { key: 'ak', statusId: 'dashAkStatus', badgeId: 'dashAkBadge' },
+        { key: 'ss', statusId: 'dashSsStatus', badgeId: 'dashSsBadge' }
+      ];
+
+      map.forEach(item => {
+        const data = appState.uploads[item.key];
+        const statusEl = document.getElementById(item.statusId);
+        const badgeEl = document.getElementById(item.badgeId);
+        if (data) {
+          statusEl.textContent = data.name;
+          statusEl.className = 'text-[11px] text-emerald-300 truncate max-w-[180px]';
+          badgeEl.textContent = data.size;
+          badgeEl.className = 'px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-950/60 text-emerald-300 border border-emerald-400/40';
+        } else {
+          statusEl.textContent = '0 files uploaded';
+          statusEl.className = 'text-[11px] text-purple-300/50';
+          badgeEl.textContent = '0 MB';
+          badgeEl.className = 'px-2.5 py-1 rounded-full text-[10px] font-mono bg-purple-950 text-purple-300/60 border border-purple-500/20';
+        }
+      });
+
+      // Update Studio Execution Readiness
+      const readinessText = document.getElementById('studioReadinessText');
+      const runBtn = document.getElementById('runEvaluationBtn');
+
+      if (uploadedCount === 3) {
+        readinessText.textContent = '3 of 3 documents mounted & verified! Ready for LLM Evaluation.';
+        readinessText.className = 'text-xs text-emerald-300 font-medium';
+        runBtn.classList.remove('opacity-60');
+      } else {
+        readinessText.textContent = `${uploadedCount} of 3 required documents uploaded. Mount all 3 slots to run evaluation.`;
+        readinessText.className = 'text-xs text-purple-300/70';
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 8. EXECUTE LLM EVALUATION PIPELINE & UPDATE DASHBOARD FROM 0
+    // -----------------------------------------------------------------------
+    function executeLlmEvaluation() {
+      const uploadedCount = Object.values(appState.uploads).filter(Boolean).length;
+      if (uploadedCount < 3) {
+        playSound('click');
+        showToast('Please upload Question Paper, Answer Key, and Student Sheet first (or click + Quick Scan on each slot).', 'MISSING DOCS');
+        return;
+      }
+
+      playSound('portal');
+      const skel = document.getElementById('evalSkeletonContainer');
+      const resBox = document.getElementById('evalResultContainer');
+      const stepText = document.getElementById('evalStepText');
+
+      resBox.classList.add('hidden');
+      skel.classList.remove('hidden');
+      stepText.textContent = 'LLM Vision Pass 1/3: Aligning Question Paper structure with Answer Key...';
+
+      setTimeout(() => {
+        stepText.textContent = 'LLM Vision Pass 2/3: Extracting Student Sheet OMR bubbles & handwriting tokens...';
+      }, 650);
+
+      setTimeout(() => {
+        stepText.textContent = 'LLM Vision Pass 3/3: Computing semantic rubric scores & confidence telemetry...';
+      }, 1300);
+
+      setTimeout(() => {
+        skel.classList.add('hidden');
+        resBox.classList.remove('hidden');
+
+        // Update metrics based on selected evaluation mode
+        appState.metrics.totalEvaluated += 1;
+        let newScore = 94;
+
+        if (appState.selectedMode === 'omr') {
+          appState.metrics.omrCount += 1;
+          appState.metrics.omrBubbles += 50;
+          newScore = 96;
+          document.getElementById('resultModeBadge').textContent = 'OMR EVALUATION';
+          document.getElementById('resScoreText').textContent = '96 / 100 (96%)';
+          document.getElementById('resOmrText').textContent = '48 / 50 Bubbles';
+          document.getElementById('resWrittenText').textContent = '0 (OMR Mode)';
+        } else if (appState.selectedMode === 'written') {
+          appState.metrics.writtenCount += 1;
+          appState.metrics.writtenLines += 18;
+          newScore = 91;
+          document.getElementById('resultModeBadge').textContent = 'WRITTEN LLM EVALUATION';
+          document.getElementById('resScoreText').textContent = '91 / 100 (91%)';
+          document.getElementById('resOmrText').textContent = '0 (Written Mode)';
+          document.getElementById('resWrittenText').textContent = '91 / 100 Marks';
+        } else {
+          appState.metrics.omrCount += 1;
+          appState.metrics.writtenCount += 1;
+          appState.metrics.omrBubbles += 40;
+          appState.metrics.writtenLines += 12;
+          newScore = 94;
+          document.getElementById('resultModeBadge').textContent = 'OMR + WRITTEN AUTO-DETECT';
+          document.getElementById('resScoreText').textContent = '94 / 100 (94%)';
+          document.getElementById('resOmrText').textContent = '38 / 40 Bubbles';
+          document.getElementById('resWrittenText').textContent = '56 / 60 Marks';
+        }
+
+        appState.metrics.historyScores.push({
+          id: `Batch #${appState.metrics.totalEvaluated}`,
+          score: newScore
+        });
+
+        const sum = appState.metrics.historyScores.reduce((acc, item) => acc + item.score, 0);
+        appState.metrics.avgScore = Math.round(sum / appState.metrics.historyScores.length);
+
+        syncMetricsToDashboardDOM();
+        playSound('success');
+        showToast('Evaluation complete! Dashboard telemetry updated.', 'LLM GRADED');
+      }, 1950);
+    }
+
+    function syncMetricsToDashboardDOM() {
+      const m = appState.metrics;
+      document.getElementById('statTotalEvaluated').textContent = m.totalEvaluated;
+      document.getElementById('statTotalSub').textContent = `${m.totalEvaluated} evaluation(s) processed in session`;
+      document.getElementById('statOmrCount').textContent = m.omrCount;
+      document.getElementById('statOmrBubbles').textContent = m.omrBubbles;
+      document.getElementById('statWrittenCount').textContent = m.writtenCount;
+      document.getElementById('statWrittenLines').textContent = m.writtenLines;
+      document.getElementById('statAvgScore').textContent = `${m.avgScore}%`;
+
+      const emptyChart = document.getElementById('dashboardChartEmpty');
+      const popChart = document.getElementById('dashboardChartPopulated');
+      const barsContainer = document.getElementById('dashboardBarsContainer');
+      const badge = document.getElementById('telemetryStatusBadge');
+      const lastEval = document.getElementById('lastEvalTimestamp');
+
+      if (m.totalEvaluated === 0) {
+        emptyChart.classList.remove('hidden');
+        popChart.classList.add('hidden');
+        badge.textContent = '0 DATA POINTS';
+        lastEval.textContent = 'LAST EVALUATION: NEVER (0)';
+      } else {
+        emptyChart.classList.add('hidden');
+        popChart.classList.remove('hidden');
+        badge.textContent = `${m.totalEvaluated} EVALUATED`;
+        lastEval.textContent = `LAST EVALUATION: JUST NOW (${m.avgScore}% AVG)`;
+
+        barsContainer.innerHTML = '';
+        m.historyScores.slice(-5).forEach((entry) => {
+          const col = document.createElement('div');
+          col.className = 'flex flex-col items-center justify-end h-full gap-2';
+          col.innerHTML = `
+            <div class="px-2 py-0.5 rounded-full bg-purple-950 border border-purple-400/50 text-[10px] font-mono text-purple-100">${entry.score}%</div>
+            <div style="height: ${entry.score}%" class="w-full rounded-t-xl bg-gradient-to-t from-purple-700 via-purple-500 to-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.75)] flex justify-center pt-1.5">
+              <span class="w-2 h-2 rounded-full bg-cosmic-950 border border-white"></span>
+            </div>
+            <span class="text-[10px] font-mono text-purple-200 pb-2">${entry.id}</span>
+          `;
+          barsContainer.appendChild(col);
+        });
+      }
+    }
+
+    function resetAllMetricsToZero() {
+      appState.uploads = { qp: null, ak: null, ss: null };
+      appState.metrics = {
+        totalEvaluated: 0,
+        omrCount: 0,
+        omrBubbles: 0,
+        writtenCount: 0,
+        writtenLines: 0,
+        avgScore: 0,
+        historyScores: []
+      };
+
+      ['qp', 'ak', 'ss'].forEach(slotKey => {
+        document.getElementById(`slotSkeleton-${slotKey}`).classList.add('hidden');
+        document.getElementById(`slotFileBox-${slotKey}`).classList.add('hidden');
+        const st = document.getElementById(`slotStatus-${slotKey}`);
+        st.textContent = '0 UPLOADED';
+        st.className = 'text-xs font-mono text-purple-400/60';
+        document.getElementById(`uploadCard-${slotKey}`).classList.remove('border-glow-active');
+      });
+
+      document.getElementById('evalSkeletonContainer').classList.add('hidden');
+      document.getElementById('evalResultContainer').classList.add('hidden');
+      document.getElementById('runEvaluationBtn').classList.add('opacity-60');
+
+      updateUploadCountersAndDashboard();
+      syncMetricsToDashboardDOM();
+    }
+
+    function resetStudioToZero() {
+      playSound('click');
+      resetAllMetricsToZero();
+      showToast('Workspace & Studio reset to 0', 'RESET');
+    }
+  </script>
+</body>
+</html>

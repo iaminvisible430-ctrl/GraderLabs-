@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      if (typeof Promise.withResolvers !== 'function') {
+        Promise.withResolvers = function () {
+          var resolve, reject;
+          var promise = new Promise(function (res, rej) {
+            resolve = res;
+            reject = rej;
+          });
+          return { promise: promise, resolve: resolve, reject: reject };
+        };
+      }
+    </script>
+    <title>GraderLabs — AI-Driven Exam Evaluation SaaS</title>
+    <meta
+      name="description"
+      content="GraderLabs is an intelligent exam evaluation studio powered by multi-modal vision LLMs for OMR sheets, handwritten scripts, and rubric-aligned student reports."
+    />
+    <meta property="og:title" content="GraderLabs — AI-Driven Exam Evaluation SaaS" />
+    <meta
+      property="og:description"
+      content="Evaluate OMR sheets, handwritten scripts, and complex rubrics with precision annotations and a themed Student Report Studio."
+    />
+
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'monospace'],
+            },
+            colors: {
+              cosmic: {
+                950: '#040209',
+                900: '#080412',
+                800: '#110926',
+                700: '#1c103b',
+              },
+              accent: {
+                purple: '#7c3aed',
+                violet: '#9333ea',
+                glow: '#a855f7',
+                light: '#d8b4fe',
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body class="selection:bg-purple-600 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
